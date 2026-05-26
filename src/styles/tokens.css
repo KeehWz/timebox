@@ -1,0 +1,72 @@
+/* Design tokens — "Quiet Focus" direction. Single source of truth for color/type/space/motion. */
+:root {
+  /* surfaces — warm paper */
+  --color-bg: oklch(98.5% 0.006 95);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-sunken: oklch(96% 0.006 95);
+  --color-ink: oklch(22% 0.02 270);
+  --color-ink-soft: oklch(46% 0.02 270);
+  --color-ink-faint: oklch(64% 0.015 270);
+  --color-hairline: oklch(90% 0.008 270);
+
+  /* category accents — semantic, one per time-type */
+  --cat-work: oklch(62% 0.16 250);
+  --cat-study: oklch(64% 0.15 300);
+  --cat-rest: oklch(72% 0.11 195);
+  --cat-exercise: oklch(66% 0.17 35);
+  --cat-chores: oklch(70% 0.13 135);
+  --cat-other: oklch(60% 0.02 270);
+
+  /* typography — 2 families max */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --font-numeric: 'Geist Mono', 'SF Mono', ui-monospace, 'Roboto Mono', monospace;
+  --text-sm: 0.9rem;
+  --text-base: clamp(1rem, 0.94rem + 0.3vw, 1.125rem);
+  --text-lg: 1.35rem;
+  --text-xl: clamp(1.6rem, 1.2rem + 1.5vw, 2.2rem);
+  --text-timer: clamp(3.5rem, 2rem + 12vw, 7rem);
+
+  /* spacing rhythm */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-section: clamp(2rem, 1.5rem + 3vw, 4rem);
+
+  /* radius / depth */
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px oklch(20% 0.02 270 / 0.06), 0 1px 3px oklch(20% 0.02 270 / 0.08);
+  --shadow-md: 0 4px 16px oklch(20% 0.02 270 / 0.1);
+
+  /* motion */
+  --duration-fast: 150ms;
+  --duration-normal: 280ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* interaction tunables (mirror of TS HOLD_DURATION_MS) */
+  --hold-duration: 1700ms;
+
+  /* safe areas (PWA standalone notch handling) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
