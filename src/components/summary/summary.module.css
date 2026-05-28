@@ -1,0 +1,119 @@
+.summary {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-block: var(--space-8);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--cat-chores) 80%, black);
+  color: oklch(99% 0 0);
+  font-weight: 700;
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.note {
+  font-size: var(--text-lg);
+  color: var(--color-ink-soft);
+}
+
+.focus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-hairline);
+}
+
+.focusValue {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(2.5rem, 1.5rem + 4vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.focusLabel {
+  font-size: var(--text-sm);
+  color: var(--color-ink-faint);
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.row dt {
+  color: var(--color-ink-soft);
+}
+
+.row dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-block: var(--space-4);
+}
+
+.primary,
+.secondary {
+  flex: 1;
+  padding: var(--space-4);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: var(--text-base);
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.primary {
+  background: var(--color-ink);
+  color: oklch(99% 0 0);
+}
+
+.secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+}
+
+.primary:active,
+.secondary:active {
+  transform: scale(0.98);
+}
