@@ -1,9 +1,15 @@
 import type { CategoryId, Session } from './session'
+import type { Locale } from '../i18n/locale'
 import { activeMs, totalPausedMs, totalSpanMs } from './metrics'
 
 const MS_PER_SECOND = 1000
 const MS_PER_MINUTE = 60 * MS_PER_SECOND
 const MS_PER_HOUR = 60 * MS_PER_MINUTE
+
+const DURATION_UNITS: Record<Locale, { h: string; m: string; s: string }> = {
+  en: { h: 'h', m: 'm', s: 's' },
+  zh: { h: '时', m: '分', s: '秒' },
+}
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n)
@@ -18,15 +24,22 @@ export function formatClock(ms: number): string {
   return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
 }
 
-/** Human duration: "1h 14m", "40m", "1m 30s", "44s", "0s". For summaries and totals. */
-export function formatHuman(ms: number): string {
+/** Locale-aware duration: en "1h 14m"/"44s"/"0s"; zh "1时14分"/"44秒"/"0秒". */
+export function formatDuration(ms: number, locale: Locale): string {
+  const u = DURATION_UNITS[locale]
+  const sep = locale === 'zh' ? '' : ' '
   const clamped = Math.max(0, ms)
   const hours = Math.floor(clamped / MS_PER_HOUR)
   const minutes = Math.floor((clamped % MS_PER_HOUR) / MS_PER_MINUTE)
   const seconds = Math.floor((clamped % MS_PER_MINUTE) / MS_PER_SECOND)
-  if (hours > 0) return `${hours}h ${minutes}m`
-  if (minutes > 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
-  return `${seconds}s`
+  if (hours > 0) return `${hours}${u.h}${sep}${minutes}${u.m}`
+  if (minutes > 0) return seconds > 0 ? `${minutes}${u.m}${sep}${seconds}${u.s}` : `${minutes}${u.m}`
+  return `${seconds}${u.s}`
+}
+
+/** Convenience: English duration. Equivalent to formatDuration(ms, 'en'). */
+export function formatHuman(ms: number): string {
+  return formatDuration(ms, 'en')
 }
 
 /** "HH:MM" local 24-hour clock for an epoch timestamp. */
@@ -47,6 +60,17 @@ export function addDays(dayKey: string, n: number): string {
   const date = new Date(year, month - 1, day) // local midnight
   date.setDate(date.getDate() + n)
   return toDayKey(date.getTime())
+}
+
+/** Localized long date for a local dayKey: zh "2026年5月28日"; en "May 28, 2026". */
+export function dayKeyLabel(dayKey: string, locale: Locale): string {
+  const [year, month, day] = dayKey.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date)
 }
 
 export interface DaySummary {

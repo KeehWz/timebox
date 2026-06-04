@@ -1,0 +1,25 @@
+import { defineConfig, devices } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: 0,
+  reporter: 'list',
+  expect: {
+    // Visual-regression tolerance — absorbs sub-pixel font/AA differences across machines.
+    toHaveScreenshot: { maxDiffPixelRatio: 0.02 },
+  },
+  use: {
+    baseURL: 'http://localhost:4173',
+    locale: 'zh-CN', // app auto-detects locale from navigator.language → defaults to zh
+    trace: 'on-first-retry',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: {
+    command: 'npm run build && npm run preview',
+    url: 'http://localhost:4173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+})

@@ -1,0 +1,12 @@
+{
+  // Cloudflare Workers static-assets deployment for the Timebox SPA.
+  // `npm run build` outputs to ./dist, which is served directly as static assets.
+  "name": "timebox",
+  "compatibility_date": "2026-06-04",
+  "assets": {
+    "directory": "./dist",
+    // react-router uses client-side routing, so unknown paths must fall back
+    // to index.html instead of returning 404 (e.g. refreshing /daily).
+    "not_found_handling": "single-page-application"
+  }
+}

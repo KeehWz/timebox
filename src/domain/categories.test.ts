@@ -7,7 +7,7 @@ describe('categories', () => {
     expect(new Set(CATEGORIES.map((c) => c.id)).size).toBe(6)
   })
   it('looks up by id', () => {
-    expect(getCategory('work').label).toBe('工作')
+    expect(getCategory('work').icon).toBe('💼')
     expect(getCategory('other').colorVar).toBe('--cat-other')
   })
   it('guards values from outside the type system', () => {
