@@ -16,7 +16,7 @@ h2,
 h3 {
   line-height: 1.1;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em; /* tighter, Cal-style display feel */
 }
 
 /* tabular figures so the live timer never reflows as digits change */

@@ -45,6 +45,27 @@ test('core flow: pick → note → timer → pause → resume → long-press end
   await expect(page.getByText('今日汇总')).toBeVisible()
 })
 
+test('language toggle switches every string between zh and en', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'EN' }).click()
+  await expect(page.getByRole('heading', { name: 'What are you tracking?' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Track/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Today/ })).toBeVisible()
+
+  await page.getByRole('button', { name: '中' }).click()
+  await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
+})
+
+test('nav shell moves between Track and Today', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('link', { name: /今天/ }).click()
+  await expect(page).toHaveURL(/\/day$/)
+  await page.getByRole('link', { name: /记录/ }).click()
+  await expect(page).toHaveURL(/\/$/)
+})
+
 test('home renders at key breakpoints', async ({ page }) => {
   for (const width of [320, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 800 })

@@ -12,6 +12,7 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://localhost:4173',
+    locale: 'zh-CN', // app auto-detects locale from navigator.language → defaults to zh
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

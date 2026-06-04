@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithI18n } from '../../test/renderWithI18n'
 import { DailyTimeline } from './DailyTimeline'
 import type { Session } from '../../domain/session'
 
 describe('DailyTimeline', () => {
   it('shows an empty state with no sessions', () => {
-    render(<DailyTimeline sessions={[]} now={0} />)
+    renderWithI18n(<DailyTimeline sessions={[]} now={0} />)
     expect(screen.getByText('今天还没有记录')).toBeInTheDocument()
   })
 
@@ -22,7 +23,7 @@ describe('DailyTimeline', () => {
       createdAt: 0,
       updatedAt: 0,
     }
-    render(<DailyTimeline sessions={[session]} now={Date.now()} />)
+    renderWithI18n(<DailyTimeline sessions={[session]} now={Date.now()} />)
     expect(screen.getByText('DP review')).toBeInTheDocument()
     expect(screen.getByText('09:10')).toBeInTheDocument()
     expect(screen.getByText('10:25')).toBeInTheDocument()

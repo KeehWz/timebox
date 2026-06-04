@@ -6,7 +6,8 @@ import {
   totalPausedMs,
   totalSpanMs,
 } from '../../domain/metrics'
-import { formatHuman, formatTimeOfDay } from '../../domain/time'
+import { formatDuration, formatTimeOfDay } from '../../domain/time'
+import { useT } from '../../i18n/I18nContext'
 import { CategoryBadge } from '../ui/CategoryBadge'
 import styles from './summary.module.css'
 
@@ -15,6 +16,7 @@ interface SessionSummaryProps {
 }
 
 export function SessionSummary({ session }: SessionSummaryProps) {
+  const { t, locale } = useT()
   // Summaries are shown for completed sessions, so endedAt is set; fall back to startedAt
   // (a zero-duration view) rather than the live clock, keeping render pure & deterministic.
   const end = session.endedAt ?? session.startedAt
@@ -29,7 +31,7 @@ export function SessionSummary({ session }: SessionSummaryProps) {
         <span className={styles.check} aria-hidden="true">
           ✓
         </span>
-        <h1 className={styles.title}>已记录</h1>
+        <h1 className={styles.title}>{t('summary.title')}</h1>
       </header>
 
       <div className={styles.meta}>
@@ -38,33 +40,31 @@ export function SessionSummary({ session }: SessionSummaryProps) {
       </div>
 
       <p className={styles.focus}>
-        <span className={styles.focusValue}>{formatHuman(focus)}</span>
-        <span className={styles.focusLabel}>专注时长</span>
+        <span className={styles.focusValue}>{formatDuration(focus, locale)}</span>
+        <span className={styles.focusLabel}>{t('summary.focusLabel')}</span>
       </p>
 
       <dl className={styles.stats}>
         <div className={styles.row}>
-          <dt>开始</dt>
+          <dt>{t('summary.start')}</dt>
           <dd>{formatTimeOfDay(session.startedAt)}</dd>
         </div>
         <div className={styles.row}>
-          <dt>结束</dt>
+          <dt>{t('summary.end')}</dt>
           <dd>{formatTimeOfDay(end)}</dd>
         </div>
         <div className={styles.row}>
-          <dt>总跨度</dt>
-          <dd>{formatHuman(span)}</dd>
+          <dt>{t('summary.span')}</dt>
+          <dd>{formatDuration(span, locale)}</dd>
         </div>
         <div className={styles.row}>
-          <dt>快速暂停</dt>
-          <dd>
-            {pauses} 次 · 共 {formatHuman(paused)}
-          </dd>
+          <dt>{t('summary.pauses')}</dt>
+          <dd>{t('summary.pauseValue', { count: pauses, total: formatDuration(paused, locale) })}</dd>
         </div>
         {pauses > 0 && (
           <div className={styles.row}>
-            <dt>最长暂停</dt>
-            <dd>{formatHuman(longestPauseMs(session, end))}</dd>
+            <dt>{t('summary.longestPause')}</dt>
+            <dd>{formatDuration(longestPauseMs(session, end), locale)}</dd>
           </div>
         )}
       </dl>

@@ -1,5 +1,6 @@
 import type { Session } from '../../domain/session'
 import { sessionRepository } from '../../data/sessionRepository'
+import { useT } from '../../i18n/I18nContext'
 import styles from './timer.module.css'
 
 interface PauseButtonProps {
@@ -7,6 +8,7 @@ interface PauseButtonProps {
 }
 
 export function PauseButton({ session }: PauseButtonProps) {
+  const { t } = useT()
   const paused = session.status === 'paused'
 
   function toggle() {
@@ -16,7 +18,7 @@ export function PauseButton({ session }: PauseButtonProps) {
 
   return (
     <button type="button" className={styles.pauseButton} onClick={toggle}>
-      {paused ? '继续' : '快速暂停'}
+      {paused ? t('timer.resume') : t('timer.pause')}
     </button>
   )
 }

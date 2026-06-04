@@ -1,4 +1,5 @@
 import type { Session } from '../../domain/session'
+import { useT } from '../../i18n/I18nContext'
 import { SessionRow } from './SessionRow'
 import styles from './daily.module.css'
 
@@ -8,8 +9,9 @@ interface DailyTimelineProps {
 }
 
 export function DailyTimeline({ sessions, now }: DailyTimelineProps) {
+  const { t } = useT()
   if (sessions.length === 0) {
-    return <p className={styles.empty}>今天还没有记录</p>
+    return <p className={styles.empty}>{t('daily.empty')}</p>
   }
   return (
     <ul className={styles.timeline}>

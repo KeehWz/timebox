@@ -1,20 +1,17 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useDailySessions } from '../hooks/useDailySessions'
 import { useNow } from '../hooks/useNow'
-import { addDays, toDayKey } from '../domain/time'
+import { addDays, dayKeyLabel, toDayKey } from '../domain/time'
+import { useT } from '../i18n/I18nContext'
 import { DailyTimeline } from '../components/daily/DailyTimeline'
 import { DailyTotals } from '../components/daily/DailyTotals'
 import styles from '../components/daily/daily.module.css'
-
-function formatDayLabel(dayKey: string): string {
-  const [year, month, day] = dayKey.split('-').map(Number)
-  return `${year}年${month}月${day}日`
-}
 
 export function DailyScreen() {
   const { date } = useParams()
   const navigate = useNavigate()
   const now = useNow()
+  const { t, locale } = useT()
   const today = toDayKey(now)
   const dayKey = date ?? today
   const isToday = dayKey === today
@@ -27,15 +24,15 @@ export function DailyScreen() {
           type="button"
           className={styles.navBtn}
           onClick={() => navigate(`/day/${addDays(dayKey, -1)}`)}
-          aria-label="前一天"
+          aria-label={t('daily.prevDayAria')}
         >
           ‹
         </button>
         <div className={styles.headerCenter}>
-          <h1 className={styles.date}>{formatDayLabel(dayKey)}</h1>
+          <h1 className={styles.date}>{dayKeyLabel(dayKey, locale)}</h1>
           {!isToday && (
             <button type="button" className={styles.todayBtn} onClick={() => navigate('/day')}>
-              回到今天
+              {t('daily.backToToday')}
             </button>
           )}
         </div>
@@ -43,7 +40,7 @@ export function DailyScreen() {
           type="button"
           className={styles.navBtn}
           onClick={() => navigate(`/day/${addDays(dayKey, 1)}`)}
-          aria-label="后一天"
+          aria-label={t('daily.nextDayAria')}
           disabled={isToday}
         >
           ›
@@ -52,7 +49,7 @@ export function DailyScreen() {
 
       {sessions === undefined ? (
         <p className={styles.empty} aria-busy="true">
-          加载中…
+          {t('daily.loading')}
         </p>
       ) : (
         <>
@@ -63,7 +60,7 @@ export function DailyScreen() {
 
       <footer className={styles.footer}>
         <button type="button" className={styles.startBtn} onClick={() => navigate('/')}>
-          ＋ 开始新的记录
+          ＋ {t('daily.startNew')}
         </button>
       </footer>
     </main>

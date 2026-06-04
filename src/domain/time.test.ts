@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { addDays, formatClock, formatHuman, formatTimeOfDay, summarizeDay, toDayKey } from './time'
+import {
+  addDays,
+  dayKeyLabel,
+  formatClock,
+  formatDuration,
+  formatHuman,
+  formatTimeOfDay,
+  summarizeDay,
+  toDayKey,
+} from './time'
 import type { Session } from './session'
 
 describe('formatClock', () => {
@@ -38,6 +47,36 @@ describe('formatHuman', () => {
   })
   it('exact hour', () => {
     expect(formatHuman(3_600_000)).toBe('1h 0m')
+  })
+})
+
+describe('formatDuration', () => {
+  it('en matches the English style', () => {
+    expect(formatDuration(4_440_000, 'en')).toBe('1h 14m')
+    expect(formatDuration(2_400_000, 'en')).toBe('40m')
+    expect(formatDuration(44_000, 'en')).toBe('44s')
+    expect(formatDuration(0, 'en')).toBe('0s')
+  })
+  it('zh uses Chinese units without separators', () => {
+    expect(formatDuration(4_440_000, 'zh')).toBe('1时14分')
+    expect(formatDuration(2_400_000, 'zh')).toBe('40分')
+    expect(formatDuration(90_000, 'zh')).toBe('1分30秒')
+    expect(formatDuration(44_000, 'zh')).toBe('44秒')
+  })
+})
+
+describe('dayKeyLabel', () => {
+  it('formats an English long date', () => {
+    const label = dayKeyLabel('2026-05-28', 'en')
+    expect(label).toContain('May')
+    expect(label).toContain('28')
+    expect(label).toContain('2026')
+  })
+  it('formats a Chinese long date', () => {
+    const label = dayKeyLabel('2026-05-28', 'zh')
+    expect(label).toContain('年')
+    expect(label).toContain('2026')
+    expect(label).toContain('28')
   })
 })
 

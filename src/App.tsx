@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useActiveSession } from './hooks/useActiveSession'
+import { AppShell } from './components/shell/AppShell'
 import { HomeScreen } from './routes/HomeScreen'
 import { ActiveSessionScreen } from './routes/ActiveSessionScreen'
 import { SummaryScreen } from './routes/SummaryScreen'
@@ -20,11 +21,15 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<HomeScreen />} />
+      {/* Home & Daily live inside the Cal-style nav shell */}
+      <Route element={<AppShell />}>
+        <Route path="/" element={<HomeScreen />} />
+        <Route path="/day" element={<DailyScreen />} />
+        <Route path="/day/:date" element={<DailyScreen />} />
+      </Route>
+      {/* Focus flows render full-screen, without nav chrome */}
       <Route path="/active" element={<ActiveSessionScreen />} />
       <Route path="/summary/:id" element={<SummaryScreen />} />
-      <Route path="/day" element={<DailyScreen />} />
-      <Route path="/day/:date" element={<DailyScreen />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

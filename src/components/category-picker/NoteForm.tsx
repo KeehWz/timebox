@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { getCategory } from '../../domain/categories'
 import type { CategoryId } from '../../domain/session'
+import { useT } from '../../i18n/I18nContext'
 import styles from './category-picker.module.css'
 
 interface NoteFormProps {
@@ -11,8 +12,10 @@ interface NoteFormProps {
 }
 
 export function NoteForm({ categoryId, onBack, onStart }: NoteFormProps) {
+  const { t } = useT()
   const [note, setNote] = useState('')
   const category = getCategory(categoryId)
+  const label = t(`category.${categoryId}.label`)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -25,29 +28,29 @@ export function NoteForm({ categoryId, onBack, onStart }: NoteFormProps) {
       style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
     >
       <button type="button" className={styles.back} onClick={onBack}>
-        ‹ 重选
+        ‹ {t('note.back')}
       </button>
       <form className={styles.noteForm} onSubmit={handleSubmit}>
         <label className={styles.noteLabel}>
           <span className={styles.noteCategory}>
-            <span aria-hidden="true">{category.icon}</span> {category.label}
+            <span aria-hidden="true">{category.icon}</span> {label}
           </span>
           <input
             className={styles.noteInput}
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={category.hint}
+            placeholder={t(`category.${categoryId}.hint`)}
             autoFocus
             enterKeyHint="go"
-            aria-label={`${category.label}的具体内容（可选）`}
+            aria-label={t('note.placeholderAria', { category: label })}
           />
         </label>
         <button type="submit" className={styles.startButton}>
-          开始 ↵
+          {t('note.start')} ↵
         </button>
       </form>
-      <p className={styles.noteTip}>直接按 Enter 也能开始，内容可不填</p>
+      <p className={styles.noteTip}>{t('note.tip')}</p>
     </section>
   )
 }

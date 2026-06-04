@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react'
 import type { Session } from '../../domain/session'
 import { CATEGORIES } from '../../domain/categories'
-import { formatHuman, summarizeDay } from '../../domain/time'
+import { formatDuration, summarizeDay } from '../../domain/time'
+import { useT } from '../../i18n/I18nContext'
 import styles from './daily.module.css'
 
 interface DailyTotalsProps {
@@ -10,6 +11,7 @@ interface DailyTotalsProps {
 }
 
 export function DailyTotals({ sessions, now }: DailyTotalsProps) {
+  const { t, locale } = useT()
   const summary = summarizeDay(sessions, now)
   const entries = CATEGORIES.map((category) => ({
     category,
@@ -21,8 +23,8 @@ export function DailyTotals({ sessions, now }: DailyTotalsProps) {
   if (entries.length === 0) return null
 
   return (
-    <section className={styles.totals} aria-label="今日汇总">
-      <h2 className={styles.totalsTitle}>今日汇总</h2>
+    <section className={styles.totals} aria-label={t('daily.summaryTitle')}>
+      <h2 className={styles.totalsTitle}>{t('daily.summaryTitle')}</h2>
       <ul className={styles.totalsList}>
         {entries.map(({ category, ms }) => (
           <li
@@ -31,14 +33,14 @@ export function DailyTotals({ sessions, now }: DailyTotalsProps) {
             style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
           >
             <span className={styles.totalDot} aria-hidden="true" />
-            <span className={styles.totalLabel}>{category.label}</span>
-            <span className={styles.totalValue}>{formatHuman(ms)}</span>
+            <span className={styles.totalLabel}>{t(`category.${category.id}.label`)}</span>
+            <span className={styles.totalValue}>{formatDuration(ms, locale)}</span>
           </li>
         ))}
       </ul>
       <div className={styles.totalsFoot}>
-        <span>暂停共 {formatHuman(summary.pausedTotalMs)}</span>
-        <span>总跨度 {formatHuman(summary.spanTotalMs)}</span>
+        <span>{t('daily.pausedTotal', { duration: formatDuration(summary.pausedTotalMs, locale) })}</span>
+        <span>{t('daily.spanTotal', { duration: formatDuration(summary.spanTotalMs, locale) })}</span>
       </div>
     </section>
   )

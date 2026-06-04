@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderWithI18n } from '../../test/renderWithI18n'
 import { db } from '../../data/db'
 import { sessionRepository } from '../../data/sessionRepository'
 import { PauseButton } from './PauseButton'
@@ -13,7 +14,7 @@ beforeEach(async () => {
 describe('PauseButton', () => {
   it('shows 快速暂停 for an active session and pauses on click', async () => {
     const s = await sessionRepository.start('work', '')
-    render(<PauseButton session={s} />)
+    renderWithI18n(<PauseButton session={s} />)
     await userEvent.click(screen.getByRole('button', { name: '快速暂停' }))
     const cur = await sessionRepository.getById(s.id)
     expect(cur?.status).toBe('paused')
@@ -23,7 +24,7 @@ describe('PauseButton', () => {
     const s = await sessionRepository.start('work', '')
     await sessionRepository.pause(s.id)
     const paused = await sessionRepository.getById(s.id)
-    render(<PauseButton session={paused!} />)
+    renderWithI18n(<PauseButton session={paused!} />)
     await userEvent.click(screen.getByRole('button', { name: '继续' }))
     const cur = await sessionRepository.getById(s.id)
     expect(cur?.status).toBe('active')

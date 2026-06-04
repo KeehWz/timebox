@@ -5,7 +5,8 @@ import { useNow } from '../hooks/useNow'
 import { sessionRepository } from '../data/sessionRepository'
 import { getCategory } from '../domain/categories'
 import { totalPausedMs } from '../domain/metrics'
-import { formatHuman } from '../domain/time'
+import { formatDuration } from '../domain/time'
+import { useT } from '../i18n/I18nContext'
 import { CategoryBadge } from '../components/ui/CategoryBadge'
 import { TimerDisplay } from '../components/timer/TimerDisplay'
 import { PauseButton } from '../components/timer/PauseButton'
@@ -16,6 +17,7 @@ export function ActiveSessionScreen() {
   const session = useActiveSession()
   const navigate = useNavigate()
   const now = useNow()
+  const { t, locale } = useT()
 
   if (session === undefined) {
     return <main className="app-shell" aria-busy="true" />
@@ -51,7 +53,7 @@ export function ActiveSessionScreen() {
           <TimerDisplay session={current} now={now} />
           {paused && (
             <p className={styles.pausedNote}>
-              已暂停 · 暂停 {formatHuman(totalPausedMs(current, now))}
+              {t('timer.pausedNote', { duration: formatDuration(totalPausedMs(current, now), locale) })}
             </p>
           )}
         </div>
