@@ -63,6 +63,69 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* "Still drifting?" prompt (spec §9 optional behavior) */
+.driftPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-md);
+  max-width: 24rem;
+}
+
+.driftPromptTitle {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.driftPromptRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.driftPromptConvert {
+  --accent: var(--cat-other);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklch, var(--accent) 40%, var(--color-hairline));
+  background: var(--color-surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.driftPromptConvert:hover {
+  background: color-mix(in oklch, var(--accent) 14%, var(--color-surface));
+}
+
+.driftPromptActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.driftPromptContinue,
+.driftPromptEnd {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.driftPromptEnd {
+  color: var(--color-ink-soft);
+}
+
 /* drift sessions carry no category — neutral pill instead of the CategoryBadge (spec §9) */
 .driftBadge {
   display: inline-flex;

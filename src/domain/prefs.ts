@@ -6,6 +6,11 @@ export interface ReminderPrefs {
   firstSessionTime: string | null
 }
 
+/** "Still drifting?" prompt cadence (spec §9 optional behavior). null = off. */
+export interface DriftPromptPrefs {
+  intervalMinutes: number | null
+}
+
 /**
  * Typed catalog of every pref (single-user local app — no User table; v2 plan Decision 6).
  * Stored as one row per key in the `prefs` table.
@@ -16,6 +21,7 @@ export interface PrefsShape {
   reminder: ReminderPrefs
   /** dayKey the first-session reminder last fired on (fire at most once per day). */
   reminderLastFiredOn: string
+  driftPrompt: DriftPromptPrefs
 }
 
 export type PrefKey = keyof PrefsShape

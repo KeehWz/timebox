@@ -23,6 +23,10 @@ const zh = {
   'home.drift': '开始漂移',
   // drift (spec §9)
   'drift.label': '漂移',
+  'drift.promptTitle': '还在漂移吗？',
+  'drift.promptContinue': '继续漂移',
+  'drift.promptEnd': '结束这段时间',
+  'drift.promptConvertAria': '归类为{category}',
   // check-in (spec §10)
   'checkin.title': '现在在做什么？',
   'checkin.placeholder': '比如：午饭、通勤、开会',
@@ -77,6 +81,9 @@ const zh = {
   'settings.reminderLabel': '首个 session 提醒时间',
   'settings.reminderOff': '关闭',
   'settings.webNote': '网页版仅在应用打开时能发出提醒；可靠的定时提醒会随原生应用提供。',
+  'settings.session': 'Session',
+  'settings.driftPromptLabel': '漂移提醒间隔',
+  'settings.minutes': '{count} 分钟',
   'notification.firstSession.title': '该开始今天的第一个 session 了',
   'notification.firstSession.body': '打开 Timebox，选一个类型开始。',
   // categories
@@ -162,6 +169,10 @@ const en: Record<MessageKey, string> = {
   'home.checkIn': 'Check in',
   'home.drift': 'Start drifting',
   'drift.label': 'Drift',
+  'drift.promptTitle': 'Still drifting?',
+  'drift.promptContinue': 'Keep drifting',
+  'drift.promptEnd': 'End this stretch',
+  'drift.promptConvertAria': 'File under {category}',
   'checkin.title': "What's happening now?",
   'checkin.placeholder': 'e.g. Lunch, commute, meeting',
   'checkin.start': 'Start check-in',
@@ -211,6 +222,9 @@ const en: Record<MessageKey, string> = {
   'settings.reminderOff': 'Off',
   'settings.webNote':
     'On the web, reminders only fire while the app is open; reliable scheduled reminders arrive with the native app.',
+  'settings.session': 'Session',
+  'settings.driftPromptLabel': 'Drift check-in interval',
+  'settings.minutes': '{count} min',
   'notification.firstSession.title': 'Time for your first session today',
   'notification.firstSession.body': 'Open Timebox and pick a type to start.',
   'category.work.label': 'Work',

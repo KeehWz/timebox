@@ -1,5 +1,13 @@
 # Plan: TimeBox v2 — Full User Loop (Retention & Session Initiation)
 
+## Status (2026-07-06)
+
+- ✅ **Phase 1 shipped** — commit `327e1c9` · report `../reports/timebox-v2-phase1-report.md`
+- ✅ **Phase 2 shipped** — commit `2629641` · report `../reports/timebox-v2-phase2-report.md`
+- ✅ **Phase 3 shipped** — commit `b7cf871` (+ "Still drifting?" prompt follow-up) · report `../reports/timebox-v2-phase3-report.md`
+- ⏳ **Phase 4** — direction only (native wrapper); not scheduled
+- CI watcher on GitHub Actions: typecheck / lint / unit+coverage / build / e2e per push & PR
+
 ## Summary
 
 The MVP timer works. v2 targets the full loop **Open App → Start Session → Stay Engaged → Complete Session → Continue Using App**, per the "TimeBox Next Version – Developer Feature Specification". This plan maps the spec's 17 features onto the existing codebase (React 19 + TS + Vite PWA, Dexie/IndexedDB local-first, react-router 7, zh/en i18n, Vitest + Playwright) and sequences them into 4 phases. The spec is treated as an idea collection: a few items are re-ordered or trimmed where they conflict with the current architecture or with web-platform reality (noted in **Key Decisions**).
@@ -155,7 +163,7 @@ Lock-screen/home-screen widgets, Live Activities, Dynamic Island require native 
 1. **Custom categories** — does v2 need user-defined categories, or are recents/favorites over the fixed six enough? (Plan assumes fixed; changing this reopens Decision 1 and touches i18n/CSS.)
 2. **Check-in ↔ session concurrency** — may a check-in stay open while a session runs? (Plan default: yes.)
 3. **Day boundary** — `dayKey` is local midnight. If a user ends their day at 1 a.m., post-midnight sessions land on the next date. Accept, or introduce a configurable day-rollover hour with Start/End Day?
-4. **Drift "Still drifting?" prompt** — include in 3.1 or defer? (Spec marks it optional-future.)
+4. ~~**Drift "Still drifting?" prompt** — include in 3.1 or defer?~~ **Resolved:** shipped post-Phase-3 with a configurable interval (Settings → Session; default 15 min, off supported).
 5. **Notification backend** — is a minimal push server (or Phase 4 native) acceptable later, or must v2 stay fully serverless? Affects how reminder settings are worded.
 
 ## Suggested First Steps

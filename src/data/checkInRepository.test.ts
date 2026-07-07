@@ -37,6 +37,8 @@ describe('checkInRepository', () => {
 
   it('lists a day’s check-ins ordered by start', async () => {
     const a = await checkInRepository.start('Lunch')
+    // distinct startedAt — Date.now() can return the same ms for back-to-back starts
+    await new Promise((resolve) => setTimeout(resolve, 5))
     await checkInRepository.start('Meeting')
     const list = await checkInRepository.listByDay(a.dayKey)
     expect(list.map((c) => c.label)).toEqual(['Lunch', 'Meeting'])

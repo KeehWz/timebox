@@ -11,6 +11,7 @@ import { CategoryBadge } from '../components/ui/CategoryBadge'
 import { TimerDisplay } from '../components/timer/TimerDisplay'
 import { PauseButton } from '../components/timer/PauseButton'
 import { LongPressEndButton } from '../components/timer/LongPressEndButton'
+import { DriftPrompt } from '../components/timer/DriftPrompt'
 import styles from '../components/timer/timer.module.css'
 
 export function ActiveSessionScreen() {
@@ -71,6 +72,8 @@ export function ActiveSessionScreen() {
             </p>
           )}
         </div>
+
+        <DriftPrompt session={current} now={now} onEnd={() => void handleEnd()} />
 
         <footer className={styles.controls}>
           <PauseButton session={current} />
