@@ -142,6 +142,16 @@
   padding-block: var(--space-12);
 }
 
+/* auto-generated day narrative (spec §15 future enhancement) */
+.narrative {
+  margin-top: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-hairline);
+  color: var(--color-ink-soft);
+  font-style: italic;
+  line-height: 1.5;
+}
+
 .totals {
   margin-top: var(--space-6);
   padding: var(--space-4);

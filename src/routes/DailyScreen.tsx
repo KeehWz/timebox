@@ -8,6 +8,7 @@ import { useNow } from '../hooks/useNow'
 import { addDays, dayKeyLabel, toDayKey } from '../domain/time'
 import { useT } from '../i18n/I18nContext'
 import { DailyTimeline } from '../components/daily/DailyTimeline'
+import { DayNarrative } from '../components/daily/DayNarrative'
 import { DailyTotals } from '../components/daily/DailyTotals'
 import styles from '../components/daily/daily.module.css'
 
@@ -65,6 +66,7 @@ export function DailyScreen() {
       ) : (
         <>
           <DailyTimeline sessions={sessions} checkIns={checkIns ?? []} now={now} />
+          <DayNarrative sessions={sessions} checkIns={checkIns ?? []} now={now} />
           <DailyTotals
             sessions={sessions}
             checkIns={checkIns ?? []}
