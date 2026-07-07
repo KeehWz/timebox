@@ -4,6 +4,7 @@ import type { CategoryStats } from '../domain/categoryStats'
 import type { Day } from '../domain/day'
 import type { DailyDirection } from '../domain/dailyDirection'
 import type { Milestone } from '../domain/milestone'
+import type { CheckIn } from '../domain/checkIn'
 
 /** prefs rows are key/value; typing lives in domain/prefs.ts + prefsRepository. */
 export interface PrefRow {
@@ -18,6 +19,7 @@ export type TimeboxDB = Dexie & {
   dailyDirections: Table<DailyDirection, [string, string]> // compound PK [date+categoryId]
   prefs: EntityTable<PrefRow, 'key'>
   milestones: EntityTable<Milestone, 'id'>
+  checkIns: EntityTable<CheckIn, 'id'>
 }
 
 /**
@@ -25,6 +27,7 @@ export type TimeboxDB = Dexie & {
  *   v1  sessions (status / dayKey / startedAt / categoryId indexes)
  *   v2  sessions.type (backfilled 'standard', indexed) + categoryStats table
  *   v3  days, dailyDirections, prefs, milestones tables (no data upgrade needed)
+ *   v4  checkIns table (no data upgrade needed)
  *
  * Exported so tests can replay the upgrade path on a scratch database.
  * The primary key is a string UUID (not auto-increment), so the schema is ready for optional
@@ -55,6 +58,10 @@ export function applySchema(instance: Dexie): TimeboxDB {
     dailyDirections: '[date+categoryId], date',
     prefs: 'key',
     milestones: 'id, dayKey',
+  })
+
+  instance.version(4).stores({
+    checkIns: 'id, status, dayKey, startedAt',
   })
 
   return instance as TimeboxDB

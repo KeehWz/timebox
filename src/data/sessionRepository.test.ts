@@ -100,6 +100,30 @@ describe('end', () => {
   })
 })
 
+describe('convertToCategory', () => {
+  it('turns a drift session into a categorized standard session', async () => {
+    const drift = await sessionRepository.start('other', '', 'drift')
+    await sessionRepository.end(drift.id)
+    await sessionRepository.convertToCategory(drift.id, 'work')
+    const converted = await sessionRepository.getById(drift.id)
+    expect(converted?.type).toBe('standard')
+    expect(converted?.categoryId).toBe('work')
+  })
+  it('is a no-op on standard sessions', async () => {
+    const s = await sessionRepository.start('study', '')
+    await sessionRepository.end(s.id)
+    await sessionRepository.convertToCategory(s.id, 'work')
+    expect((await sessionRepository.getById(s.id))?.categoryId).toBe('study')
+  })
+  it('does not bump category usage stats', async () => {
+    await db.categoryStats.clear()
+    const drift = await sessionRepository.start('other', '', 'drift')
+    await sessionRepository.end(drift.id)
+    await sessionRepository.convertToCategory(drift.id, 'work')
+    expect(await db.categoryStats.get('work')).toBeUndefined()
+  })
+})
+
 describe('listByDay', () => {
   it('returns the day’s sessions ordered by startedAt', async () => {
     const a = await sessionRepository.start('work', 'a')

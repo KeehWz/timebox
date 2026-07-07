@@ -4,6 +4,7 @@ import type { CategoryId } from '../domain/session'
 import { getCategory } from '../domain/categories'
 import { lastUsedCategoryId } from '../domain/categoryStats'
 import { sessionRepository } from '../data/sessionRepository'
+import { checkInRepository } from '../data/checkInRepository'
 import { ActiveSessionExistsError } from '../lib/errors'
 import { dayRepository } from '../data/dayRepository'
 import { toDayKey } from '../domain/time'
@@ -20,17 +21,35 @@ import { StartTransition } from '../components/start/StartTransition'
 import { TodaySummary } from '../components/home/TodaySummary'
 import { ChallengeCard } from '../components/home/ChallengeCard'
 import { DirectionStrip } from '../components/direction/DirectionStrip'
+import { CheckInForm } from '../components/checkin/CheckInForm'
 import styles from '../components/home/home.module.css'
 
 /**
  * Start flow (spec §6): idle → pick → note → transition → /active.
  * The session is created when the transition finishes, so it never eats into focus time.
+ * Drift (spec §9) skips picking and runs a neutral transition; check-in (spec §10) is a
+ * one-field form that stays on Home.
  */
 type Flow =
   | { step: 'idle' }
   | { step: 'pick' }
   | { step: 'note'; categoryId: CategoryId }
-  | { step: 'transition'; categoryId: CategoryId; note: string }
+  | { step: 'transition'; categoryId: CategoryId; note: string; drift?: boolean }
+  | { step: 'checkin' }
+
+/** Router-state deep links from summary / onboarding / start-day. */
+interface HomeDeepLink {
+  startNew?: boolean
+  checkIn?: boolean
+  drift?: boolean
+}
+
+function initialFlow(state: HomeDeepLink | null): Flow {
+  if (state?.startNew) return { step: 'pick' }
+  if (state?.checkIn) return { step: 'checkin' }
+  if (state?.drift) return { step: 'transition', categoryId: 'other', note: '', drift: true }
+  return { step: 'idle' }
+}
 
 export function HomeScreen() {
   const navigate = useNavigate()
@@ -43,27 +62,31 @@ export function HomeScreen() {
   const day = useDay(todayKey)
   const directions = useDailyDirections(todayKey)
   const challenge = usePref('challenge')
-  // Deep link from the summary screen's "Start new session" next-action: land directly in
-  // the picker (lazy initializer — HomeScreen mounts fresh on every route change to '/').
-  const [flow, setFlow] = useState<Flow>(() =>
-    (location.state as { startNew?: boolean } | null)?.startNew ? { step: 'pick' } : { step: 'idle' },
-  )
+  // Deep links land directly in the right step (lazy initializer — HomeScreen mounts fresh
+  // on every route change to '/').
+  const [flow, setFlow] = useState<Flow>(() => initialFlow(location.state as HomeDeepLink | null))
 
-  // Clear the router state so refresh / back-navigation doesn't reopen the picker.
+  // Clear the router state so refresh / back-navigation doesn't replay the deep link.
   useEffect(() => {
-    if ((location.state as { startNew?: boolean } | null)?.startNew) {
+    const state = location.state as HomeDeepLink | null
+    if (state?.startNew || state?.checkIn || state?.drift) {
       navigate(location.pathname, { replace: true, state: null })
     }
   }, [location, navigate])
 
-  async function begin(categoryId: CategoryId, note: string) {
+  async function begin(categoryId: CategoryId, note: string, drift: boolean) {
     try {
-      await sessionRepository.start(categoryId, note)
+      await sessionRepository.start(categoryId, note, drift ? 'drift' : 'standard')
     } catch (error) {
       // A session already exists (e.g. opened in another tab) — just navigate to it.
       if (!(error instanceof ActiveSessionExistsError)) throw error
     }
     navigate('/active')
+  }
+
+  async function startCheckIn(label: string) {
+    await checkInRepository.start(label)
+    setFlow({ step: 'idle' })
   }
 
   if (stats === undefined) {
@@ -96,8 +119,22 @@ export function HomeScreen() {
         <StartTransition
           categoryId={flow.categoryId}
           firstOfDay={!stats.hasSession}
-          onDone={() => void begin(flow.categoryId, flow.note)}
+          drift={flow.drift ?? false}
+          onDone={() => void begin(flow.categoryId, flow.note, flow.drift ?? false)}
         />
+      </main>
+    )
+  }
+
+  if (flow.step === 'checkin') {
+    return (
+      <main className="app-shell">
+        <section className={styles.state}>
+          <CheckInForm
+            onStart={(label) => void startCheckIn(label)}
+            onCancel={() => setFlow({ step: 'idle' })}
+          />
+        </section>
       </main>
     )
   }
@@ -111,7 +148,28 @@ export function HomeScreen() {
 
   const dayEnded = day?.endedAt != null
 
-  // State A — nothing recorded today (spec §1). Check-In / Drift CTAs land in Phase 3.
+  const captureModesRow = (
+    <div className={styles.actionRow}>
+      <button
+        type="button"
+        className={styles.secondaryCta}
+        onClick={() => setFlow({ step: 'checkin' })}
+      >
+        <span aria-hidden="true">📍</span> {t('home.checkIn')}
+      </button>
+      <button
+        type="button"
+        className={styles.secondaryCta}
+        onClick={() =>
+          setFlow({ step: 'transition', categoryId: 'other', note: '', drift: true })
+        }
+      >
+        <span aria-hidden="true">🌫️</span> {t('home.drift')}
+      </button>
+    </div>
+  )
+
+  // State A — nothing recorded today (spec §1), with Check-In / Drift CTAs (spec §1 / plan §3.4).
   if (!stats.hasSession) {
     return (
       <main className="app-shell">
@@ -137,6 +195,7 @@ export function HomeScreen() {
             >
               {t('home.startDay')}
             </button>
+            {captureModesRow}
           </div>
         </section>
       </main>
@@ -168,6 +227,7 @@ export function HomeScreen() {
               {t('home.quickStart', { category: t(`category.${lastCategory}.label`) })}
             </button>
           )}
+          {captureModesRow}
           <button type="button" className={styles.secondaryCta} onClick={() => navigate('/day')}>
             {t('home.viewToday')}
           </button>

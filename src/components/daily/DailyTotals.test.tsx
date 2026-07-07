@@ -38,4 +38,29 @@ describe('DailyTotals', () => {
     const { container } = renderWithI18n(<DailyTotals sessions={[]} now={0} />)
     expect(container).toBeEmptyDOMElement()
   })
+
+  it('shows intended-vs-actual rows and day counts', () => {
+    const sessions = [completed('a', 'work', 3_600_000)]
+    const checkIns = [
+      {
+        id: 'c',
+        label: 'Lunch',
+        startedAt: 0,
+        endedAt: 60_000,
+        status: 'done' as const,
+        dayKey: '2026-05-26',
+        createdAt: 0,
+        updatedAt: 0,
+      },
+    ]
+    const directions = [
+      { date: '2026-05-26', categoryId: 'work' as const, targetDurationMs: 7_200_000 },
+    ]
+    renderWithI18n(
+      <DailyTotals sessions={sessions} checkIns={checkIns} directions={directions} now={9_999_999} />,
+    )
+    expect(screen.getByText('方向对比')).toBeInTheDocument()
+    expect(screen.getByText('1时0分 / 目标 2时0分')).toBeInTheDocument()
+    expect(screen.getByText('1 个 session · 1 次打卡')).toBeInTheDocument()
+  })
 })

@@ -45,7 +45,13 @@ export function ActiveSessionScreen() {
       <div className={styles.activeWash} aria-hidden="true" />
       <section className={styles.active}>
         <header className={styles.activeHead}>
-          <CategoryBadge categoryId={current.categoryId} />
+          {current.type === 'drift' ? (
+            <span className={styles.driftBadge}>
+              <span aria-hidden="true">🌫️</span> {t('drift.label')}
+            </span>
+          ) : (
+            <CategoryBadge categoryId={current.categoryId} />
+          )}
           {current.note && <p className={styles.note}>{current.note}</p>}
         </header>
 

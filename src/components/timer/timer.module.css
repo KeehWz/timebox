@@ -63,6 +63,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* drift sessions carry no category — neutral pill instead of the CategoryBadge (spec §9) */
+.driftBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--cat-other) 16%, var(--color-surface));
+  border: 1px solid color-mix(in oklch, var(--cat-other) 35%, var(--color-hairline));
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
 .activeHead {
   display: flex;
   flex-direction: column;

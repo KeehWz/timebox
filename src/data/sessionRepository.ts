@@ -119,6 +119,18 @@ export const sessionRepository = {
     return (await db.sessions.get(id)) ?? null
   },
 
+  /**
+   * Convert a drift session into a categorized standard session (spec §9 — post-hoc
+   * "convert to category" on the summary screen). No-op on non-drift sessions.
+   * Deliberately does not bump categoryStats: recents should reflect deliberate starts.
+   */
+  async convertToCategory(id: string, categoryId: CategoryId): Promise<void> {
+    const session = await requireSession(id)
+    if (session.type !== 'drift') return
+    const updated: Session = { ...session, type: 'standard', categoryId, updatedAt: Date.now() }
+    await db.sessions.put(updated)
+  },
+
   /** Sessions for a local day, ordered by start time. */
   listByDay(dayKey: string): Promise<Session[]> {
     return db.sessions.where('dayKey').equals(dayKey).sortBy('startedAt')

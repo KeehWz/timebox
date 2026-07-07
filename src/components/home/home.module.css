@@ -55,6 +55,15 @@
   gap: var(--space-3);
 }
 
+.actionRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.actionRow > * {
+  flex: 1;
+}
+
 .primaryCta {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);

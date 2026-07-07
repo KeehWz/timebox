@@ -35,7 +35,13 @@ export function SessionSummary({ session }: SessionSummaryProps) {
       </header>
 
       <div className={styles.meta}>
-        <CategoryBadge categoryId={session.categoryId} />
+        {session.type === 'drift' ? (
+          <span className={styles.driftBadge}>
+            <span aria-hidden="true">🌫️</span> {t('drift.label')}
+          </span>
+        ) : (
+          <CategoryBadge categoryId={session.categoryId} />
+        )}
         {session.note && <p className={styles.note}>{session.note}</p>}
       </div>
 

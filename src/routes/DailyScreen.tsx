@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { rewardService } from '../data/rewardService'
 import { useDailySessions } from '../hooks/useDailySessions'
+import { useDailyCheckIns } from '../hooks/useDailyCheckIns'
+import { useDailyDirections } from '../hooks/useDailyDirections'
 import { useNow } from '../hooks/useNow'
 import { addDays, dayKeyLabel, toDayKey } from '../domain/time'
 import { useT } from '../i18n/I18nContext'
@@ -18,6 +20,8 @@ export function DailyScreen() {
   const dayKey = date ?? today
   const isToday = dayKey === today
   const sessions = useDailySessions(dayKey)
+  const checkIns = useDailyCheckIns(dayKey)
+  const directions = useDailyDirections(dayKey)
 
   // Challenge day 3: reviewing today's dashboard completes the last step (spec §17).
   useEffect(() => {
@@ -60,8 +64,13 @@ export function DailyScreen() {
         </p>
       ) : (
         <>
-          <DailyTimeline sessions={sessions} now={now} />
-          <DailyTotals sessions={sessions} now={now} />
+          <DailyTimeline sessions={sessions} checkIns={checkIns ?? []} now={now} />
+          <DailyTotals
+            sessions={sessions}
+            checkIns={checkIns ?? []}
+            directions={directions ?? []}
+            now={now}
+          />
         </>
       )}
 

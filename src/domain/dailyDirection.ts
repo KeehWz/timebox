@@ -26,3 +26,25 @@ export function orderDirections(directions: readonly DailyDirection[]): DailyDir
     (a, b) => (DEFAULT_ORDER.get(a.categoryId) ?? 0) - (DEFAULT_ORDER.get(b.categoryId) ?? 0),
   )
 }
+
+/** One row of the dashboard's intended-vs-actual comparison (spec §5 — no enforcement). */
+export interface DirectionComparison {
+  categoryId: CategoryId
+  targetDurationMs: number | null
+  actualMs: number
+}
+
+/**
+ * Compare intended categories against actually-recorded focus time. Only intended
+ * categories appear (the regular per-category totals cover everything else).
+ */
+export function compareToDirections(
+  directions: readonly DailyDirection[],
+  actualByCategory: Partial<Record<CategoryId, number>>,
+): DirectionComparison[] {
+  return orderDirections(directions).map((direction) => ({
+    categoryId: direction.categoryId,
+    targetDurationMs: direction.targetDurationMs,
+    actualMs: actualByCategory[direction.categoryId] ?? 0,
+  }))
+}

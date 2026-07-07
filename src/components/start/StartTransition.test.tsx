@@ -33,6 +33,14 @@ describe('StartTransition', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('renders the neutral drift variant', () => {
+    vi.useFakeTimers()
+    renderWithI18n(
+      <StartTransition categoryId="other" firstOfDay={false} drift onDone={() => {}} />,
+    )
+    expect(screen.getByText('漂移')).toBeInTheDocument()
+  })
+
   it('tap skips immediately and never double-fires', () => {
     vi.useFakeTimers()
     const onDone = vi.fn()

@@ -28,7 +28,13 @@ export function SessionRow({ session, now }: SessionRowProps) {
       </div>
       <div className={styles.rowMain}>
         <div className={styles.rowHead}>
-          <CategoryBadge categoryId={session.categoryId} size="sm" />
+          {session.type === 'drift' ? (
+            <span className={styles.driftBadge}>
+              <span aria-hidden="true">🌫️</span> {t('drift.label')}
+            </span>
+          ) : (
+            <CategoryBadge categoryId={session.categoryId} size="sm" />
+          )}
           {session.note && <span className={styles.rowNote}>{session.note}</span>}
         </div>
         <div className={styles.rowStats}>

@@ -132,6 +132,41 @@ test('day lifecycle: start day with direction → session → strip on home → 
   await expect(page.getByText('今日汇总')).toBeVisible()
 })
 
+test('drift: start → neutral timer → summary convert to category', async ({ page }) => {
+  await page.getByRole('button', { name: /开始漂移/ }).click()
+
+  // neutral transition → timer with the drift badge
+  await expect(page).toHaveURL(/\/active$/, { timeout: 10_000 })
+  await expect(page.getByText('漂移')).toBeVisible()
+
+  // end and convert on the summary
+  await page.getByRole('button', { name: /长按结束/ }).hover()
+  await page.mouse.down()
+  await page.waitForTimeout(2100)
+  await page.mouse.up()
+  await expect(page).toHaveURL(/\/summary\//)
+  await expect(page.getByText('把这段漂移归类为…')).toBeVisible()
+  await page.getByRole('button', { name: /工作/ }).click()
+  await expect(page.getByText('把这段漂移归类为…')).not.toBeVisible()
+  await expect(page.getByText('工作')).toBeVisible()
+})
+
+test('check-in: label → persistent chip → end → daily timeline', async ({ page }) => {
+  await page.getByRole('button', { name: /打卡/ }).click()
+  await page.getByRole('textbox').fill('午饭')
+  await page.getByRole('button', { name: '开始打卡' }).click()
+
+  // chip persists across shell screens
+  await expect(page.getByText(/打卡中：午饭/)).toBeVisible()
+  await page.getByRole('link', { name: /今天/ }).click()
+  await expect(page.getByText(/打卡中：午饭/)).toBeVisible()
+
+  // end it; it stays on the daily timeline
+  await page.getByRole('button', { name: '结束' }).click()
+  await expect(page.getByText(/打卡中：午饭/)).not.toBeVisible()
+  await expect(page.getByText(/午饭/)).toBeVisible()
+})
+
 test('nav shell moves between Track and Today', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('link', { name: /今天/ }).click()

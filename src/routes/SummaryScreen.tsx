@@ -1,5 +1,7 @@
+import type { CSSProperties } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { CATEGORIES } from '../domain/categories'
 import { sessionRepository } from '../data/sessionRepository'
 import { useDayMilestones } from '../hooks/useDayMilestones'
 import { useT } from '../i18n/I18nContext'
@@ -33,8 +35,31 @@ export function SummaryScreen() {
     <main className="app-shell">
       <SessionSummary session={session} />
       <MilestoneToast kinds={earnedNow} />
-      {/* spec §12: use completion as a transition into the next action.
-          Check-In / Drift actions join this row in Phase 3 (plan §3.4). */}
+
+      {/* drift → post-hoc categorization (spec §9) */}
+      {session.type === 'drift' && (
+        <section className={styles.convert} aria-labelledby="convert-heading">
+          <h2 id="convert-heading" className={styles.convertTitle}>
+            {t('summary.convertTitle')}
+          </h2>
+          <div className={styles.convertRow}>
+            {CATEGORIES.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={styles.convertBtn}
+                style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
+                onClick={() => void sessionRepository.convertToCategory(session.id, category.id)}
+              >
+                <span aria-hidden="true">{category.icon}</span>{' '}
+                {t(`category.${category.id}.label`)}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* spec §12: use completion as a transition into the next action (incl. §9/§10 modes). */}
       <footer className={styles.actions}>
         <button
           type="button"
@@ -43,6 +68,22 @@ export function SummaryScreen() {
         >
           {t('summary.startNew')}
         </button>
+        <div className={styles.secondaryRow}>
+          <button
+            type="button"
+            className={styles.secondary}
+            onClick={() => navigate('/', { state: { checkIn: true } })}
+          >
+            {t('summary.startCheckIn')}
+          </button>
+          <button
+            type="button"
+            className={styles.secondary}
+            onClick={() => navigate('/', { state: { drift: true } })}
+          >
+            {t('summary.startDrift')}
+          </button>
+        </div>
         <div className={styles.secondaryRow}>
           <button type="button" className={styles.secondary} onClick={() => navigate('/day')}>
             {t('summary.viewToday')}

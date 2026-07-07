@@ -9,6 +9,8 @@ interface StartTransitionProps {
   categoryId: CategoryId
   /** First session of the day gets a longer beat (spec §6: 2–4 s vs 1–2 s). */
   firstOfDay: boolean
+  /** Drift start (spec §9): neutral accent + drift label instead of the category. */
+  drift?: boolean
   /** Fired exactly once — after the timeout, or immediately on tap-to-skip. */
   onDone: () => void
 }
@@ -31,7 +33,7 @@ function transitionDuration(firstOfDay: boolean): number {
  * The session starts when this finishes, so the transition never eats into focus time.
  * The whole surface is a button: tap anywhere to skip.
  */
-export function StartTransition({ categoryId, firstOfDay, onDone }: StartTransitionProps) {
+export function StartTransition({ categoryId, firstOfDay, drift = false, onDone }: StartTransitionProps) {
   const { t } = useT()
   const category = getCategory(categoryId)
   const firedRef = useRef(false)
@@ -60,15 +62,17 @@ export function StartTransition({ categoryId, firstOfDay, onDone }: StartTransit
     <button
       type="button"
       className={styles.transition}
-      style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
+      style={{ '--accent': drift ? 'var(--cat-other)' : `var(${category.colorVar})` } as CSSProperties}
       onClick={skip}
       aria-label={t('transition.skipAria')}
     >
       <span className={styles.transitionPulse} aria-hidden="true" />
       <span className={styles.transitionIcon} aria-hidden="true">
-        {category.icon}
+        {drift ? '🌫️' : category.icon}
       </span>
-      <span className={styles.transitionLabel}>{t(`category.${categoryId}.label`)}</span>
+      <span className={styles.transitionLabel}>
+        {drift ? t('drift.label') : t(`category.${categoryId}.label`)}
+      </span>
       <span className={styles.transitionHint}>{t('transition.preparing')}</span>
     </button>
   )
