@@ -5,14 +5,21 @@ import { getCategory } from '../domain/categories'
 import { lastUsedCategoryId } from '../domain/categoryStats'
 import { sessionRepository } from '../data/sessionRepository'
 import { ActiveSessionExistsError } from '../lib/errors'
+import { dayRepository } from '../data/dayRepository'
+import { toDayKey } from '../domain/time'
 import { useNow } from '../hooks/useNow'
 import { useTodayStats } from '../hooks/useTodayStats'
 import { useCategoryStats } from '../hooks/useCategoryStats'
+import { useDay } from '../hooks/useDay'
+import { useDailyDirections } from '../hooks/useDailyDirections'
+import { usePref } from '../hooks/usePref'
 import { useT } from '../i18n/I18nContext'
 import { CategoryPicker } from '../components/category-picker/CategoryPicker'
 import { NoteForm } from '../components/category-picker/NoteForm'
 import { StartTransition } from '../components/start/StartTransition'
 import { TodaySummary } from '../components/home/TodaySummary'
+import { ChallengeCard } from '../components/home/ChallengeCard'
+import { DirectionStrip } from '../components/direction/DirectionStrip'
 import styles from '../components/home/home.module.css'
 
 /**
@@ -30,9 +37,12 @@ export function HomeScreen() {
   const location = useLocation()
   const { t } = useT()
   const now = useNow()
+  const todayKey = toDayKey(now)
   const stats = useTodayStats(now)
   const categoryStats = useCategoryStats()
-
+  const day = useDay(todayKey)
+  const directions = useDailyDirections(todayKey)
+  const challenge = usePref('challenge')
   // Deep link from the summary screen's "Start new session" next-action: land directly in
   // the picker (lazy initializer — HomeScreen mounts fresh on every route change to '/').
   const [flow, setFlow] = useState<Flow>(() =>
@@ -94,6 +104,13 @@ export function HomeScreen() {
 
   const lastCategory = categoryStats ? lastUsedCategoryId(categoryStats) : null
 
+  async function endDay() {
+    await dayRepository.endDay(todayKey, Date.now())
+    navigate('/day') // closure: land on the daily summary (spec §14)
+  }
+
+  const dayEnded = day?.endedAt != null
+
   // State A — nothing recorded today (spec §1). Check-In / Drift CTAs land in Phase 3.
   if (!stats.hasSession) {
     return (
@@ -103,6 +120,8 @@ export function HomeScreen() {
             <h1 className={styles.title}>{t('home.firstTitle')}</h1>
             <p className={styles.subtitle}>{t('home.firstSubtitle')}</p>
           </header>
+          {directions && <DirectionStrip directions={directions} />}
+          {challenge && <ChallengeCard challenge={challenge} todayKey={todayKey} />}
           <div className={styles.actions}>
             <button
               type="button"
@@ -110,6 +129,13 @@ export function HomeScreen() {
               onClick={() => setFlow({ step: 'pick' })}
             >
               {t('home.startFirst')}
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryCta}
+              onClick={() => navigate('/start-day')}
+            >
+              {t('home.startDay')}
             </button>
           </div>
         </section>
@@ -122,6 +148,8 @@ export function HomeScreen() {
     <main className="app-shell">
       <section className={styles.state}>
         <TodaySummary stats={stats} />
+        {directions && <DirectionStrip directions={directions} />}
+        {challenge && <ChallengeCard challenge={challenge} todayKey={todayKey} />}
         <div className={styles.actions}>
           <button
             type="button"
@@ -143,6 +171,13 @@ export function HomeScreen() {
           <button type="button" className={styles.secondaryCta} onClick={() => navigate('/day')}>
             {t('home.viewToday')}
           </button>
+          {dayEnded ? (
+            <p className={styles.dayEndedNote}>{t('home.dayEnded')}</p>
+          ) : (
+            <button type="button" className={styles.ghostCta} onClick={() => void endDay()}>
+              {t('home.endDay')}
+            </button>
+          )}
         </div>
       </section>
     </main>

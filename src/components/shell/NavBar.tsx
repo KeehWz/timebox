@@ -5,6 +5,7 @@ import styles from './shell.module.css'
 const ITEMS = [
   { to: '/', key: 'nav.track', icon: '⏱', end: true },
   { to: '/day', key: 'nav.today', icon: '📅', end: false },
+  { to: '/settings', key: 'nav.settings', icon: '⚙️', end: false },
 ] as const
 
 export function NavBar() {

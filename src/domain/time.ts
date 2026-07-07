@@ -54,6 +54,13 @@ export function toDayKey(epochMs: number): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
+/** Epoch ms for a local 'HH:MM' time-of-day on the given local dayKey. */
+export function dayKeyTimeToEpoch(dayKey: string, timeOfDay: string): number {
+  const [year, month, day] = dayKey.split('-').map(Number)
+  const [hours, minutes] = timeOfDay.split(':').map(Number)
+  return new Date(year, month - 1, day, hours, minutes).getTime()
+}
+
 /** The dayKey `n` days after the given local dayKey (n may be negative). */
 export function addDays(dayKey: string, n: number): string {
   const [year, month, day] = dayKey.split('-').map(Number)

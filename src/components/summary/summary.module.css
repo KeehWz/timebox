@@ -99,6 +99,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* milestones earned by this session (spec §13) */
+.milestones {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.milestoneChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--cat-chores) 16%, var(--color-surface));
+  border: 1px solid color-mix(in oklch, var(--cat-chores) 35%, var(--color-hairline));
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
 /* spec §12: completion is a transition into the next action — primary CTA + secondary row */
 .actions {
   display: flex;

@@ -1,5 +1,7 @@
 import { db } from './db'
 import { categoryStatsRepository } from './categoryStatsRepository'
+import { dayRepository } from './dayRepository'
+import { rewardService } from './rewardService'
 import type { CategoryId, Session, SessionType } from '../domain/session'
 import { toDayKey } from '../domain/time'
 import { newId } from '../lib/id'
@@ -29,15 +31,16 @@ export const sessionRepository = {
 
   /**
    * Start a new session. Guards against more than one in-flight session.
-   * Records category usage (recents / quick start) in the same transaction — but only for
-   * standard sessions, so future drift starts don't pollute the recents ordering.
+   * Same transaction also: records category usage (standard sessions only, so future drift
+   * starts don't pollute recents) and implicitly starts the day (spec §4 — a session without
+   * an explicit "Start Day" still opens the day record).
    */
   async start(
     categoryId: CategoryId,
     note: string,
     type: SessionType = 'standard',
   ): Promise<Session> {
-    return db.transaction('rw', db.sessions, db.categoryStats, async () => {
+    return db.transaction('rw', db.sessions, db.categoryStats, db.days, async () => {
       if (await findActive()) throw new ActiveSessionExistsError()
       const now = Date.now()
       const session: Session = {
@@ -55,6 +58,7 @@ export const sessionRepository = {
       }
       await db.sessions.add(session)
       if (type === 'standard') await categoryStatsRepository.recordUse(categoryId, now)
+      await dayRepository.ensureStarted(session.dayKey, now)
       return session
     })
   },
@@ -86,22 +90,29 @@ export const sessionRepository = {
     await db.sessions.put(updated)
   },
 
-  /** End the session. Closes any open pause at the end time, then marks it completed. */
+  /**
+   * End the session. Closes any open pause at the end time, then marks it completed.
+   * The same transaction evaluates the reward layer (milestones + challenge, spec §13/§17),
+   * so rewards fire exactly once no matter which screen triggered the end.
+   */
   async end(id: string): Promise<Session> {
-    const session = await requireSession(id)
-    const now = Date.now()
-    const pauses = session.pauses.map((p) =>
-      p.resumedAt === null ? { ...p, resumedAt: now } : p,
-    )
-    const ended: Session = {
-      ...session,
-      pauses,
-      status: 'completed',
-      endedAt: now,
-      updatedAt: now,
-    }
-    await db.sessions.put(ended)
-    return ended
+    return db.transaction('rw', db.sessions, db.milestones, db.prefs, async () => {
+      const session = await requireSession(id)
+      const now = Date.now()
+      const pauses = session.pauses.map((p) =>
+        p.resumedAt === null ? { ...p, resumedAt: now } : p,
+      )
+      const ended: Session = {
+        ...session,
+        pauses,
+        status: 'completed',
+        endedAt: now,
+        updatedAt: now,
+      }
+      await db.sessions.put(ended)
+      await rewardService.onSessionCompleted(ended)
+      return ended
+    })
   },
 
   async getById(id: string): Promise<Session | null> {

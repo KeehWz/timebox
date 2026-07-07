@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { rewardService } from '../data/rewardService'
 import { useDailySessions } from '../hooks/useDailySessions'
 import { useNow } from '../hooks/useNow'
 import { addDays, dayKeyLabel, toDayKey } from '../domain/time'
@@ -16,6 +18,11 @@ export function DailyScreen() {
   const dayKey = date ?? today
   const isToday = dayKey === today
   const sessions = useDailySessions(dayKey)
+
+  // Challenge day 3: reviewing today's dashboard completes the last step (spec §17).
+  useEffect(() => {
+    if (isToday) void rewardService.recordDashboardVisit(dayKey)
+  }, [isToday, dayKey])
 
   return (
     <main className="app-shell">
