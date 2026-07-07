@@ -1,0 +1,90 @@
+/* Home screen states (spec §1) — State A: first-session prompt; State B: today summary + quick actions. */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-block: var(--space-section);
+  flex: 1;
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.subtitle {
+  color: var(--color-ink-soft);
+}
+
+/* --- State B summary card --- */
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-sm);
+}
+
+.summaryTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.summaryValue {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+
+.summaryMeta {
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
+}
+
+/* --- actions --- */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.primaryCta {
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.primaryCta:hover {
+  transform: translateY(-1px);
+}
+
+.secondaryCta {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out-expo),
+    box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.secondaryCta:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-ink-faint);
+}

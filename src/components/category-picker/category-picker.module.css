@@ -30,6 +30,36 @@
 
 .gridItem {
   display: flex;
+  position: relative; /* anchor for the favorite toggle overlay */
+}
+
+/* Favorite toggle — a sibling of the tile (buttons must not nest), overlaid on its corner. */
+.favBtn {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-faint);
+  font-size: var(--text-base);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.favBtn:hover {
+  color: var(--color-ink);
+}
+
+.favOn {
+  color: oklch(75% 0.15 85); /* warm star gold */
+}
+
+.favOn:hover {
+  color: oklch(68% 0.15 85);
 }
 
 .tile {

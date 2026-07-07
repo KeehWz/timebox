@@ -1,5 +1,6 @@
 import { db } from './db'
-import type { CategoryId, Session } from '../domain/session'
+import { categoryStatsRepository } from './categoryStatsRepository'
+import type { CategoryId, Session, SessionType } from '../domain/session'
 import { toDayKey } from '../domain/time'
 import { newId } from '../lib/id'
 import { ActiveSessionExistsError, SessionNotFoundError } from '../lib/errors'
@@ -26,24 +27,36 @@ export const sessionRepository = {
     return findActive()
   },
 
-  /** Start a new session. Guards against more than one in-flight session. */
-  async start(categoryId: CategoryId, note: string): Promise<Session> {
-    if (await findActive()) throw new ActiveSessionExistsError()
-    const now = Date.now()
-    const session: Session = {
-      id: newId(),
-      categoryId,
-      note: note.trim(),
-      startedAt: now,
-      endedAt: null,
-      pauses: [],
-      status: 'active',
-      dayKey: toDayKey(now),
-      createdAt: now,
-      updatedAt: now,
-    }
-    await db.sessions.add(session)
-    return session
+  /**
+   * Start a new session. Guards against more than one in-flight session.
+   * Records category usage (recents / quick start) in the same transaction — but only for
+   * standard sessions, so future drift starts don't pollute the recents ordering.
+   */
+  async start(
+    categoryId: CategoryId,
+    note: string,
+    type: SessionType = 'standard',
+  ): Promise<Session> {
+    return db.transaction('rw', db.sessions, db.categoryStats, async () => {
+      if (await findActive()) throw new ActiveSessionExistsError()
+      const now = Date.now()
+      const session: Session = {
+        id: newId(),
+        type,
+        categoryId,
+        note: note.trim(),
+        startedAt: now,
+        endedAt: null,
+        pauses: [],
+        status: 'active',
+        dayKey: toDayKey(now),
+        createdAt: now,
+        updatedAt: now,
+      }
+      await db.sessions.add(session)
+      if (type === 'standard') await categoryStatsRepository.recordUse(categoryId, now)
+      return session
+    })
   },
 
   /** Begin a quick-pause. No-op if the session is not currently active. */

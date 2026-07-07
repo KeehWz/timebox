@@ -4,7 +4,7 @@ import { useActiveSession } from '../hooks/useActiveSession'
 import { useNow } from '../hooks/useNow'
 import { sessionRepository } from '../data/sessionRepository'
 import { getCategory } from '../domain/categories'
-import { totalPausedMs } from '../domain/metrics'
+import { activeMs, totalPausedMs } from '../domain/metrics'
 import { formatDuration } from '../domain/time'
 import { useT } from '../i18n/I18nContext'
 import { CategoryBadge } from '../components/ui/CategoryBadge'
@@ -50,10 +50,18 @@ export function ActiveSessionScreen() {
         </header>
 
         <div className={styles.timerBlock}>
-          <TimerDisplay session={current} now={now} />
-          {paused && (
+          <div className={styles.breathRing} data-paused={paused || undefined}>
+            <TimerDisplay session={current} now={now} />
+          </div>
+          {paused ? (
             <p className={styles.pausedNote}>
               {t('timer.pausedNote', { duration: formatDuration(totalPausedMs(current, now), locale) })}
+            </p>
+          ) : (
+            <p className={styles.statusLine}>
+              {t('timer.statusFocusing', {
+                duration: formatDuration(activeMs(current, now), locale),
+              })}
             </p>
           )}
         </div>

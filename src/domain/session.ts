@@ -5,6 +5,13 @@ export type CategoryId = 'work' | 'study' | 'rest' | 'exercise' | 'chores' | 'ot
 export type SessionStatus = 'active' | 'paused' | 'completed'
 
 /**
+ * How the time was captured. 'standard' = focused, categorized session (the only kind the UI
+ * starts today); 'drift' = unstructured time (v2 plan Phase 3). Sharing one engine keeps timer,
+ * pause and daily rollups working for every capture mode.
+ */
+export type SessionType = 'standard' | 'drift'
+
+/**
  * One quick-pause interval inside a session.
  * `resumedAt` is null while the pause is still open (i.e. the session is currently paused).
  */
@@ -22,6 +29,7 @@ export interface PauseInterval {
  */
 export interface Session {
   id: string
+  type: SessionType
   categoryId: CategoryId
   note: string // optional detail; '' when none — never null/undefined
   startedAt: number

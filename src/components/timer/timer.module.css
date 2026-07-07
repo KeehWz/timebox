@@ -21,6 +21,46 @@
   );
   pointer-events: none;
   z-index: 0;
+  /* spec §11: lightweight ambient motion; killed globally under prefers-reduced-motion */
+  animation: wash-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes wash-breathe {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Soft breathing halo around the clock (spec §11). Freezes while paused. */
+.breathRing {
+  display: flex;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  padding: var(--space-4) var(--space-8);
+  animation: ring-breathe 4.5s ease-in-out infinite;
+}
+
+.breathRing[data-paused] {
+  animation-play-state: paused;
+}
+
+@keyframes ring-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 60px 4px color-mix(in oklch, var(--accent) 22%, transparent);
+  }
+}
+
+.statusLine {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .activeHead {

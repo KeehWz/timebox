@@ -24,13 +24,24 @@ export function SummaryScreen() {
   return (
     <main className="app-shell">
       <SessionSummary session={session} />
+      {/* spec §12: use completion as a transition into the next action.
+          Check-In / Drift actions join this row in Phase 3 (plan §3.4). */}
       <footer className={styles.actions}>
-        <button type="button" className={styles.secondary} onClick={() => navigate('/day')}>
-          {t('summary.viewToday')}
+        <button
+          type="button"
+          className={styles.primary}
+          onClick={() => navigate('/', { state: { startNew: true } })}
+        >
+          {t('summary.startNew')}
         </button>
-        <button type="button" className={styles.primary} onClick={() => navigate('/')}>
-          {t('summary.done')}
-        </button>
+        <div className={styles.secondaryRow}>
+          <button type="button" className={styles.secondary} onClick={() => navigate('/day')}>
+            {t('summary.viewToday')}
+          </button>
+          <button type="button" className={styles.secondary} onClick={() => navigate('/')}>
+            {t('summary.home')}
+          </button>
+        </div>
       </footer>
     </main>
   )

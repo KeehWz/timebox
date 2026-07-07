@@ -12,6 +12,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     pauses: [],
     status: 'active',
     dayKey: '1970-01-01',
+    type: 'standard',
     createdAt: 0,
     updatedAt: 0,
     ...overrides,

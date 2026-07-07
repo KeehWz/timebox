@@ -14,6 +14,7 @@ function completed(id: string, categoryId: CategoryId, spanMs: number): Session 
     pauses: [],
     status: 'completed',
     dayKey: '2026-05-26',
+    type: 'standard',
     createdAt: 0,
     updatedAt: 0,
   }

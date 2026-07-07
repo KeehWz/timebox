@@ -44,30 +44,43 @@ export function SessionSummary({ session }: SessionSummaryProps) {
         <span className={styles.focusLabel}>{t('summary.focusLabel')}</span>
       </p>
 
-      <dl className={styles.stats}>
-        <div className={styles.row}>
-          <dt>{t('summary.start')}</dt>
-          <dd>{formatTimeOfDay(session.startedAt)}</dd>
-        </div>
-        <div className={styles.row}>
-          <dt>{t('summary.end')}</dt>
-          <dd>{formatTimeOfDay(end)}</dd>
-        </div>
-        <div className={styles.row}>
-          <dt>{t('summary.span')}</dt>
-          <dd>{formatDuration(span, locale)}</dd>
-        </div>
-        <div className={styles.row}>
-          <dt>{t('summary.pauses')}</dt>
-          <dd>{t('summary.pauseValue', { count: pauses, total: formatDuration(paused, locale) })}</dd>
-        </div>
-        {pauses > 0 && (
+      {/* spec §12: Session (what happened) and Metrics (how it went) as separate groups */}
+      <div className={styles.statsGroup}>
+        <h2 className={styles.statsHeading}>{t('summary.sectionSession')}</h2>
+        <dl className={styles.stats}>
           <div className={styles.row}>
-            <dt>{t('summary.longestPause')}</dt>
-            <dd>{formatDuration(longestPauseMs(session, end), locale)}</dd>
+            <dt>{t('summary.start')}</dt>
+            <dd>{formatTimeOfDay(session.startedAt)}</dd>
           </div>
-        )}
-      </dl>
+          <div className={styles.row}>
+            <dt>{t('summary.end')}</dt>
+            <dd>{formatTimeOfDay(end)}</dd>
+          </div>
+          <div className={styles.row}>
+            <dt>{t('summary.span')}</dt>
+            <dd>{formatDuration(span, locale)}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {/* Active duration lives in the hero above; repeating it here would be noise. */}
+      <div className={styles.statsGroup}>
+        <h2 className={styles.statsHeading}>{t('summary.sectionMetrics')}</h2>
+        <dl className={styles.stats}>
+          <div className={styles.row}>
+            <dt>{t('summary.pauses')}</dt>
+            <dd>
+              {t('summary.pauseValue', { count: pauses, total: formatDuration(paused, locale) })}
+            </dd>
+          </div>
+          {pauses > 0 && (
+            <div className={styles.row}>
+              <dt>{t('summary.longestPause')}</dt>
+              <dd>{formatDuration(longestPauseMs(session, end), locale)}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
     </section>
   )
 }
