@@ -1,4 +1,4 @@
-import type { CategoryId, Session } from './session'
+import type { Session } from './session'
 import type { Locale } from '../i18n/locale'
 import { activeMs, totalPausedMs, totalSpanMs } from './metrics'
 
@@ -81,7 +81,7 @@ export function dayKeyLabel(dayKey: string, locale: Locale): string {
 }
 
 export interface DaySummary {
-  byCategory: Partial<Record<CategoryId, number>> // focus ms per category (completed sessions only)
+  byCategory: Record<string, number> // focus ms per category id (completed sessions only)
   pausedTotalMs: number
   spanTotalMs: number
 }
@@ -91,7 +91,7 @@ export interface DaySummary {
  * Authoritative metric definitions: focus = span − paused; span = end − start.
  */
 export function summarizeDay(sessions: readonly Session[], now: number): DaySummary {
-  const byCategory: Partial<Record<CategoryId, number>> = {}
+  const byCategory: Record<string, number> = {}
   let pausedTotalMs = 0
   let spanTotalMs = 0
   for (const session of sessions) {

@@ -9,9 +9,10 @@
 }
 
 .brand {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -30,7 +31,7 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--color-ink-soft);
+  color: var(--color-ink-faint);
   font-size: var(--text-sm);
   font-weight: 600;
   transition:
@@ -43,14 +44,16 @@
   color: var(--color-ink);
 }
 
-.navLinkActive {
-  background: var(--color-surface-sunken);
-  color: var(--color-ink);
+/* design: active tab carries the accent, chrome stays quiet */
+.navLinkActive,
+.navLinkActive:hover {
+  color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-soft) 65%, transparent);
 }
 
 .navIcon {
-  font-size: 1.15rem;
-  line-height: 1;
+  display: block;
+  flex: none;
 }
 
 .langToggle {
@@ -132,15 +135,54 @@
   }
   .navLink {
     flex-direction: column;
-    gap: 2px;
-    font-size: 0.7rem;
+    gap: 3px;
+    font-size: 0.625rem;
     padding: var(--space-1) var(--space-3);
   }
-  .navIcon {
-    font-size: 1.25rem;
+  /* bottom bar: color alone marks the active tab (design) */
+  .navLinkActive,
+  .navLinkActive:hover {
+    background: none;
   }
   .content {
     /* clear the fixed bottom bar (~56px + safe area) */
     padding-bottom: calc(56px + var(--safe-bottom));
   }
+}
+
+/* --- design screen header: serif title left, date + gear right --- */
+
+.screenHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-1) var(--space-3);
+}
+
+.screenTitle {
+  font-size: var(--text-xl);
+}
+
+.screenMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-ink-faint);
+}
+
+.gearLink {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-ink-faint);
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.gearLink:hover {
+  color: var(--color-accent);
 }

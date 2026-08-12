@@ -1,7 +1,7 @@
 import type { Session } from '../../domain/session'
 import type { CheckIn } from '../../domain/checkIn'
-import { CATEGORIES } from '../../domain/categories'
 import { formatDuration, summarizeDay } from '../../domain/time'
+import { useCategoryResolver } from '../../hooks/useCategoryResolver'
 import { useT } from '../../i18n/I18nContext'
 import styles from './daily.module.css'
 
@@ -19,22 +19,21 @@ const TOP_CATEGORIES = 2
  */
 export function DayNarrative({ sessions, checkIns = [], now }: DayNarrativeProps) {
   const { t, locale } = useT()
+  const resolve = useCategoryResolver()
   const completedCount = sessions.filter((s) => s.status === 'completed').length
   if (completedCount === 0) return null
 
   const summary = summarizeDay(sessions, now)
   const totalMs = Object.values(summary.byCategory).reduce((sum, ms) => sum + (ms ?? 0), 0)
 
-  const top = CATEGORIES.map((category) => ({
-    category,
-    ms: summary.byCategory[category.id] ?? 0,
-  }))
+  const top = Object.entries(summary.byCategory)
+    .map(([id, ms]) => ({ id, ms }))
     .filter((entry) => entry.ms > 0)
     .sort((a, b) => b.ms - a.ms)
     .slice(0, TOP_CATEGORIES)
     .map((entry) =>
       t('daily.narrativeCat', {
-        category: t(`category.${entry.category.id}.label`),
+        category: resolve(entry.id).displayLabel,
         duration: formatDuration(entry.ms, locale),
       }),
     )

@@ -1,5 +1,4 @@
 import { db } from './db'
-import type { CategoryId } from '../domain/session'
 import type { CategoryStats } from '../domain/categoryStats'
 
 /**
@@ -12,7 +11,7 @@ export const categoryStatsRepository = {
   },
 
   /** Bump usage for a category. Called on session start, inside the same transaction. */
-  async recordUse(id: CategoryId, at: number): Promise<void> {
+  async recordUse(id: string, at: number): Promise<void> {
     const existing = await db.categoryStats.get(id)
     const updated: CategoryStats = existing
       ? { ...existing, usageCount: existing.usageCount + 1, lastUsedAt: at }
@@ -20,7 +19,7 @@ export const categoryStatsRepository = {
     await db.categoryStats.put(updated)
   },
 
-  async toggleFavorite(id: CategoryId): Promise<void> {
+  async toggleFavorite(id: string): Promise<void> {
     const existing = await db.categoryStats.get(id)
     const updated: CategoryStats = existing
       ? { ...existing, favorite: !existing.favorite }

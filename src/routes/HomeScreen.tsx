@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import type { CategoryId } from '../domain/session'
-import { getCategory } from '../domain/categories'
 import { lastUsedCategoryId } from '../domain/categoryStats'
 import { sessionRepository } from '../data/sessionRepository'
 import { checkInRepository } from '../data/checkInRepository'
@@ -14,6 +12,7 @@ import { useCategoryStats } from '../hooks/useCategoryStats'
 import { useDay } from '../hooks/useDay'
 import { useDailyDirections } from '../hooks/useDailyDirections'
 import { usePref } from '../hooks/usePref'
+import { useCategoryResolver } from '../hooks/useCategoryResolver'
 import { useT } from '../i18n/I18nContext'
 import { CategoryPicker } from '../components/category-picker/CategoryPicker'
 import { NoteForm } from '../components/category-picker/NoteForm'
@@ -22,6 +21,7 @@ import { TodaySummary } from '../components/home/TodaySummary'
 import { ChallengeCard } from '../components/home/ChallengeCard'
 import { DirectionStrip } from '../components/direction/DirectionStrip'
 import { CheckInForm } from '../components/checkin/CheckInForm'
+import { ScreenHeader } from '../components/shell/ScreenHeader'
 import styles from '../components/home/home.module.css'
 
 /**
@@ -33,8 +33,8 @@ import styles from '../components/home/home.module.css'
 type Flow =
   | { step: 'idle' }
   | { step: 'pick' }
-  | { step: 'note'; categoryId: CategoryId }
-  | { step: 'transition'; categoryId: CategoryId; note: string; drift?: boolean }
+  | { step: 'note'; categoryId: string }
+  | { step: 'transition'; categoryId: string; note: string; drift?: boolean }
   | { step: 'checkin' }
 
 /** Router-state deep links from summary / onboarding / start-day. */
@@ -55,6 +55,7 @@ export function HomeScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useT()
+  const resolve = useCategoryResolver()
   const now = useNow()
   const todayKey = toDayKey(now)
   const stats = useTodayStats(now)
@@ -74,7 +75,7 @@ export function HomeScreen() {
     }
   }, [location, navigate])
 
-  async function begin(categoryId: CategoryId, note: string, drift: boolean) {
+  async function begin(categoryId: string, note: string, drift: boolean) {
     try {
       await sessionRepository.start(categoryId, note, drift ? 'drift' : 'standard')
     } catch (error) {
@@ -173,9 +174,10 @@ export function HomeScreen() {
   if (!stats.hasSession) {
     return (
       <main className="app-shell">
+        <ScreenHeader title={t('nav.focus')} showSettings />
         <section className={styles.state}>
           <header>
-            <h1 className={styles.title}>{t('home.firstTitle')}</h1>
+            <h2 className={styles.title}>{t('home.firstTitle')}</h2>
             <p className={styles.subtitle}>{t('home.firstSubtitle')}</p>
           </header>
           {directions && <DirectionStrip directions={directions} />}
@@ -205,6 +207,7 @@ export function HomeScreen() {
   // State B — sessions already recorded today (spec §1).
   return (
     <main className="app-shell">
+      <ScreenHeader title={t('nav.focus')} showSettings />
       <section className={styles.state}>
         <TodaySummary stats={stats} />
         {directions && <DirectionStrip directions={directions} />}
@@ -223,8 +226,8 @@ export function HomeScreen() {
               className={styles.secondaryCta}
               onClick={() => setFlow({ step: 'transition', categoryId: lastCategory, note: '' })}
             >
-              <span aria-hidden="true">{getCategory(lastCategory).icon}</span>{' '}
-              {t('home.quickStart', { category: t(`category.${lastCategory}.label`) })}
+              <span aria-hidden="true">{resolve(lastCategory).icon || '✨'}</span>{' '}
+              {t('home.quickStart', { category: resolve(lastCategory).displayLabel })}
             </button>
           )}
           {captureModesRow}

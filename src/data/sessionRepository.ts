@@ -2,7 +2,7 @@ import { db } from './db'
 import { categoryStatsRepository } from './categoryStatsRepository'
 import { dayRepository } from './dayRepository'
 import { rewardService } from './rewardService'
-import type { CategoryId, Session, SessionType } from '../domain/session'
+import type { Session, SessionType } from '../domain/session'
 import { toDayKey } from '../domain/time'
 import { newId } from '../lib/id'
 import { ActiveSessionExistsError, SessionNotFoundError } from '../lib/errors'
@@ -36,9 +36,10 @@ export const sessionRepository = {
    * an explicit "Start Day" still opens the day record).
    */
   async start(
-    categoryId: CategoryId,
+    categoryId: string,
     note: string,
     type: SessionType = 'standard',
+    taskId?: string,
   ): Promise<Session> {
     return db.transaction('rw', db.sessions, db.categoryStats, db.days, async () => {
       if (await findActive()) throw new ActiveSessionExistsError()
@@ -47,6 +48,7 @@ export const sessionRepository = {
         id: newId(),
         type,
         categoryId,
+        ...(taskId ? { taskId } : {}),
         note: note.trim(),
         startedAt: now,
         endedAt: null,
@@ -124,7 +126,7 @@ export const sessionRepository = {
    * "convert to category" on the summary screen). No-op on non-drift sessions.
    * Deliberately does not bump categoryStats: recents should reflect deliberate starts.
    */
-  async convertToCategory(id: string, categoryId: CategoryId): Promise<void> {
+  async convertToCategory(id: string, categoryId: string): Promise<void> {
     const session = await requireSession(id)
     if (session.type !== 'drift') return
     const updated: Session = { ...session, type: 'standard', categoryId, updatedAt: Date.now() }

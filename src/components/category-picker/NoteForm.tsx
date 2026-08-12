@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import { getCategory } from '../../domain/categories'
-import type { CategoryId } from '../../domain/session'
+import { categoryAccent, isCategoryId } from '../../domain/categories'
+import { useCategory } from '../../hooks/useCategory'
 import { useT } from '../../i18n/I18nContext'
 import styles from './category-picker.module.css'
 
 interface NoteFormProps {
-  categoryId: CategoryId
+  /** Builtin CategoryId or a custom focus-type id. */
+  categoryId: string
   onBack: () => void
   onStart: (note: string) => void
 }
@@ -14,8 +15,8 @@ interface NoteFormProps {
 export function NoteForm({ categoryId, onBack, onStart }: NoteFormProps) {
   const { t } = useT()
   const [note, setNote] = useState('')
-  const category = getCategory(categoryId)
-  const label = t(`category.${categoryId}.label`)
+  const category = useCategory(categoryId)
+  const label = category.displayLabel
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -25,7 +26,7 @@ export function NoteForm({ categoryId, onBack, onStart }: NoteFormProps) {
   return (
     <section
       className={styles.notePanel}
-      style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
+      style={{ '--accent': categoryAccent(category) } as CSSProperties}
     >
       <button type="button" className={styles.back} onClick={onBack}>
         ‹ {t('note.back')}
@@ -33,14 +34,21 @@ export function NoteForm({ categoryId, onBack, onStart }: NoteFormProps) {
       <form className={styles.noteForm} onSubmit={handleSubmit}>
         <label className={styles.noteLabel}>
           <span className={styles.noteCategory}>
-            <span aria-hidden="true">{category.icon}</span> {label}
+            {category.iconImage ? (
+              <img className={styles.tileImg} src={category.iconImage} alt="" />
+            ) : (
+              <span aria-hidden="true">{category.icon}</span>
+            )}{' '}
+            {label}
           </span>
           <input
             className={styles.noteInput}
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={t(`category.${categoryId}.hint`)}
+            placeholder={
+              isCategoryId(categoryId) ? t(`category.${categoryId}.hint`) : t('picker.customHint')
+            }
             autoFocus
             enterKeyHint="go"
             aria-label={t('note.placeholderAria', { category: label })}

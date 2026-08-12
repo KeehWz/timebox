@@ -27,3 +27,6 @@ dist-ssr
 coverage
 playwright-report
 test-results
+
+# Cowork cleanup staging (delete this folder manually)
+_to_delete/

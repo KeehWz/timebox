@@ -12,12 +12,13 @@ beforeEach(async () => {
 })
 
 describe('CategoryPicker', () => {
-  it('renders all six categories', () => {
+  it('renders all six categories plus the new-type tile', () => {
     renderWithI18n(<CategoryPicker onSelect={() => {}} />)
     expect(screen.getByText('工作')).toBeInTheDocument()
     expect(screen.getByText('学习')).toBeInTheDocument()
     expect(screen.getByText('其他')).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(6)
+    expect(screen.getByText('新建类型')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(7)
   })
 
   it('calls onSelect with the category id when a tile is clicked', async () => {

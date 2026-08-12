@@ -30,7 +30,10 @@ export interface PauseInterval {
 export interface Session {
   id: string
   type: SessionType
-  categoryId: CategoryId
+  /** Builtin CategoryId or a user-created focus-type id (domain/focusType.ts). */
+  categoryId: string
+  /** Set when the session was started from an Inbox task; the summary offers to complete it. */
+  taskId?: string
   note: string // optional detail; '' when none — never null/undefined
   startedAt: number
   endedAt: number | null // null until completed

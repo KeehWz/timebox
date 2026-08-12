@@ -1,0 +1,161 @@
+/* Inbox tab — ported from Timebox.dc.html (add row, task cards, done section). */
+
+.addRow {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.addInput {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  padding: 0.6875rem 0.875rem;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.addInput:focus {
+  border-color: var(--color-accent);
+}
+
+.addBtn {
+  width: 2.75rem;
+  flex: none;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  animation: row-in var(--duration-normal) var(--ease-out-expo);
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.rowTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.estimateChip {
+  background: var(--color-soft);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.iconBtn {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-hairline);
+  background: none;
+  color: var(--color-ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  transition:
+    color var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.iconBtn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
+  padding: var(--space-8) 0;
+}
+
+.doneTitle {
+  font-family: var(--font-sans); /* kicker labels stay sans (design) even on headings */
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-faint);
+  text-transform: uppercase;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.rowDone {
+  opacity: 0.6;
+  padding: var(--space-3) var(--space-4);
+  animation: none;
+}
+
+.doneText {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-decoration: line-through;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undoBtn {
+  background: none;
+  border: none;
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  flex: none;
+}

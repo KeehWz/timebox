@@ -1,31 +1,39 @@
-/* Design tokens — Cal.com-style neutral chrome with retained per-category accents. */
+/* Design tokens — "porcelain" theme ported from Timebox.dc.html (claude.ai/design).
+   Warm cream chrome, white cards, terracotta accent, serif display type. */
 :root {
-  /* surfaces — neutral grayscale (Cal bg-default / bg-muted / border-subtle) */
-  --color-bg: oklch(98.5% 0 0);
-  --color-surface: oklch(100% 0 0);
-  --color-surface-sunken: oklch(97% 0 0);
-  --color-ink: oklch(24% 0 0); /* text-emphasis (~#242424) */
-  --color-ink-soft: oklch(45% 0 0); /* text-default */
-  --color-ink-faint: oklch(62% 0 0); /* text-subtle */
-  --color-hairline: oklch(92% 0 0); /* border-subtle (gray-200) */
+  /* surfaces — porcelain: warm cream bg, white cards, warm hairlines */
+  --color-bg: #f7f4ee;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #ede7dc; /* design --track: hover/active fills, bar tracks */
+  --color-ink: #26221c;
+  --color-ink-soft: oklch(48% 0.015 85); /* darker than design --sub for body-copy contrast */
+  --color-ink-faint: #8a8378; /* design --sub */
+  --color-hairline: #e7e1d6; /* design --line */
 
-  /* category accents — semantic, retained (color is used for the type, chrome stays neutral) */
-  --cat-work: oklch(62% 0.16 250);
-  --cat-study: oklch(64% 0.15 300);
-  --cat-rest: oklch(72% 0.11 195);
-  --cat-exercise: oklch(66% 0.17 35);
-  --cat-chores: oklch(70% 0.13 135);
-  --cat-other: oklch(60% 0.02 270);
+  /* single product accent (design --accent) + tints */
+  --color-accent: #c4602f;
+  --color-accent-ink: #ffffff;
+  --color-soft: #f3e4d8; /* design --soft: accent-tinted wash (banners, chips) */
+  --color-track: #ede7dc; /* design --track: ring + bar tracks */
 
-  /* typography — Inter (self-hosted variable), 1 family */
-  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
-    'Microsoft YaHei', sans-serif;
-  --font-numeric: var(--font-sans); /* timer uses Inter + tabular-nums */
+  /* category accents — semantic, retained (color is used for the type, chrome stays warm) */
+  --cat-work: oklch(58% 0.14 45); /* work adopts the product terracotta */
+  --cat-study: oklch(60% 0.12 300);
+  --cat-rest: oklch(66% 0.1 195);
+  --cat-exercise: oklch(62% 0.15 25);
+  --cat-chores: oklch(64% 0.12 135);
+  --cat-other: oklch(58% 0.02 90);
+
+  /* typography — Instrument Sans for UI, Instrument Serif for display/clock */
+  --font-sans: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system,
+    'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Instrument Serif', 'Songti SC', 'SimSun', ui-serif, Georgia, serif;
+  --font-numeric: var(--font-display); /* design clock is serif + tabular-nums */
   --text-sm: 0.8125rem;
   --text-base: 0.9375rem;
   --text-lg: 1.125rem;
-  --text-xl: clamp(1.4rem, 1.1rem + 1vw, 1.875rem);
-  --text-timer: clamp(3rem, 1.8rem + 10vw, 6rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem); /* serif screen titles (design: 30px) */
+  --text-timer: clamp(3rem, 2.4rem + 3vw, 3.5rem); /* design clock: 56px */
 
   /* spacing rhythm */
   --space-1: 0.25rem;
@@ -37,15 +45,15 @@
   --space-12: 3rem;
   --space-section: clamp(2rem, 1.5rem + 3vw, 4rem);
 
-  /* radius — Cal small */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  /* radius — design: 14px cards, 12px inputs, pills for actions */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.875rem;
   --radius-pill: 9999px;
 
-  /* elevation — Cal ring + soft shadow */
-  --shadow-sm: 0 0 0 1px oklch(0% 0 0 / 0.04), 0 1px 2px oklch(0% 0 0 / 0.06);
-  --shadow-md: 0 0 0 1px oklch(0% 0 0 / 0.04), 0 4px 12px oklch(0% 0 0 / 0.08);
+  /* elevation — design: borderline cards with soft diffuse shadows, no rings */
+  --shadow-sm: 0 2px 10px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 12px 32px rgb(0 0 0 / 0.14);
 
   /* motion */
   --duration-fast: 150ms;

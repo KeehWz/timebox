@@ -173,6 +173,7 @@
 }
 
 .vsTitle {
+  font-family: var(--font-sans); /* kicker labels stay sans (design) even on headings */
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-ink-faint);
@@ -231,8 +232,246 @@
   width: 100%;
   padding: var(--space-4);
   border-radius: var(--radius-pill);
-  background: var(--color-ink);
-  color: oklch(99% 0 0);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
   font-weight: 600;
   font-size: var(--text-base);
+}
+
+/* --- hour-grid timeline (design: Timebox.dc.html Today) --- */
+
+.gridSection {
+  position: relative;
+}
+
+.armedBanner {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 5;
+  margin-bottom: var(--space-3);
+  background: var(--color-soft);
+  color: var(--color-ink);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  animation: fade-up var(--duration-normal) var(--ease-out-expo);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.armedText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.armedCancel {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  flex: none;
+}
+
+.grid {
+  position: relative;
+}
+
+.gridArmed {
+  cursor: copy;
+}
+
+.hourRule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.hourLabel {
+  width: 36px;
+  font-size: 0.6875rem;
+  color: var(--color-ink-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.hourLine {
+  flex: 1;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.nowLine {
+  position: absolute;
+  left: 48px;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.nowDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  margin-left: -3px;
+  flex: none;
+}
+
+.nowRule {
+  flex: 1;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.block {
+  position: absolute;
+  left: 54px;
+  right: 2px;
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  padding: 5px 12px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.blockOngoing {
+  border-color: var(--accent, var(--color-accent));
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.blockDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, var(--color-accent));
+  flex: none;
+}
+
+.blockTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.blockTime {
+  font-size: 0.6875rem;
+  color: var(--color-ink-faint);
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkInChip {
+  position: absolute;
+  left: 54px;
+  z-index: 3;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskBlock {
+  border-style: dashed;
+  border-color: var(--color-ink-faint);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: color-mix(in oklch, var(--color-surface) 72%, transparent);
+}
+
+.taskDot {
+  background: var(--color-accent);
+}
+
+.taskSelected {
+  border-style: solid;
+  border-color: var(--color-accent);
+}
+
+.taskDone {
+  opacity: 0.55;
+}
+
+.taskDoneText {
+  text-decoration: line-through;
+}
+
+.taskActions {
+  position: sticky;
+  bottom: calc(var(--safe-bottom) + 72px);
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  padding: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-md);
+  animation: fade-up var(--duration-fast) var(--ease-out-expo);
+}
+
+.taskActionPrimary {
+  flex: 1;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.taskAction {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-weight: 600;
+  font-size: var(--text-sm);
 }

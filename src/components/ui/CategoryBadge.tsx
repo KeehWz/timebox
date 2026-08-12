@@ -1,22 +1,25 @@
 import type { CSSProperties } from 'react'
-import { getCategory } from '../../domain/categories'
-import type { CategoryId } from '../../domain/session'
-import { useT } from '../../i18n/I18nContext'
+import { categoryAccent } from '../../domain/categories'
+import { useCategory } from '../../hooks/useCategory'
 import styles from './ui.module.css'
 
 interface CategoryBadgeProps {
-  categoryId: CategoryId
+  /** Builtin CategoryId or a custom focus-type id. */
+  categoryId: string
   size?: 'sm' | 'md'
 }
 
 export function CategoryBadge({ categoryId, size = 'md' }: CategoryBadgeProps) {
-  const { t } = useT()
-  const category = getCategory(categoryId)
+  const category = useCategory(categoryId)
   const className = size === 'sm' ? `${styles.badge} ${styles.badgeSm}` : styles.badge
   return (
-    <span className={className} style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}>
-      <span aria-hidden="true">{category.icon}</span>
-      <span>{t(`category.${categoryId}.label`)}</span>
+    <span className={className} style={{ '--accent': categoryAccent(category) } as CSSProperties}>
+      {category.iconImage ? (
+        <img className={styles.badgeImg} src={category.iconImage} alt="" width="16" height="16" />
+      ) : (
+        <span aria-hidden="true">{category.icon}</span>
+      )}
+      <span>{category.displayLabel}</span>
     </span>
   )
 }

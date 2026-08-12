@@ -3,7 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { CATEGORIES } from '../domain/categories'
 import { sessionRepository } from '../data/sessionRepository'
+import { taskRepository } from '../data/taskRepository'
 import { useDayMilestones } from '../hooks/useDayMilestones'
+import { useTasks } from '../hooks/useTasks'
 import { useT } from '../i18n/I18nContext'
 import { SessionSummary } from '../components/summary/SessionSummary'
 import { MilestoneToast } from '../components/summary/MilestoneToast'
@@ -18,6 +20,7 @@ export function SummaryScreen() {
     [id],
   )
   const milestones = useDayMilestones(session?.dayKey)
+  const tasks = useTasks()
 
   if (session === undefined) {
     return <main className="app-shell" aria-busy="true" />
@@ -31,10 +34,28 @@ export function SummaryScreen() {
     .filter((m) => m.firedAt === session.endedAt)
     .map((m) => m.kind)
 
+  // Sessions started from an Inbox task offer to complete that task (design's Done flow).
+  const linkedTask = session.taskId
+    ? (tasks ?? []).find((task) => task.id === session.taskId)
+    : undefined
+
   return (
     <main className="app-shell">
       <SessionSummary session={session} />
       <MilestoneToast kinds={earnedNow} />
+
+      {linkedTask &&
+        (linkedTask.doneAt === null ? (
+          <button
+            type="button"
+            className={styles.taskDoneBtn}
+            onClick={() => void taskRepository.setDone(linkedTask.id, true)}
+          >
+            ✓ {t('summary.taskDone')}
+          </button>
+        ) : (
+          <p className={styles.taskDoneNote}>{t('summary.taskDoneDone')}</p>
+        ))}
 
       {/* drift → post-hoc categorization (spec §9) */}
       {session.type === 'drift' && (

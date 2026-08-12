@@ -1,4 +1,4 @@
-import type { CategoryId, Session } from './session'
+import type { Session } from './session'
 import { activeMs } from './metrics'
 
 /** Home-screen aggregates for the current day (spec §1 — homepage state system). */
@@ -9,7 +9,7 @@ export interface TodayStats {
   /** Focus ms across today's sessions; a still-running session counts up to `now`. */
   totalTrackedMs: number
   /** Category of the most recently started session today, or null. Drives quick start. */
-  lastCategoryId: CategoryId | null
+  lastCategoryId: string | null
 }
 
 /** Pure rollup over one day's sessions (any status). */

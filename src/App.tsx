@@ -5,6 +5,8 @@ import { useOnboardingGate } from './hooks/useOnboardingGate'
 import { useFirstSessionReminder } from './hooks/useFirstSessionReminder'
 import { AppShell } from './components/shell/AppShell'
 import { HomeScreen } from './routes/HomeScreen'
+import { InboxScreen } from './routes/InboxScreen'
+import { StatsScreen } from './routes/StatsScreen'
 import { ActiveSessionScreen } from './routes/ActiveSessionScreen'
 import { SummaryScreen } from './routes/SummaryScreen'
 import { DailyScreen } from './routes/DailyScreen'
@@ -28,11 +30,13 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Home & Daily live inside the Cal-style nav shell */}
+      {/* 4-tab shell (design: Today / Focus / Inbox / Stats); settings via the header gear */}
       <Route element={<AppShell />}>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/day" element={<DailyScreen />} />
         <Route path="/day/:date" element={<DailyScreen />} />
+        <Route path="/inbox" element={<InboxScreen />} />
+        <Route path="/stats" element={<StatsScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Route>
       {/* Focus / lifecycle flows render full-screen, without nav chrome */}

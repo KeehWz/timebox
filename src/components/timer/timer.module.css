@@ -34,27 +34,34 @@
   }
 }
 
-/* Soft breathing halo around the clock (spec §11). Freezes while paused. */
-.breathRing {
+/* Focus ring (Timebox.dc.html): 250px track + accent arc, clock centered inside.
+   The arc refills once per minute — count-up sweep, not a countdown. */
+.ringWrap {
+  position: relative;
+  width: 250px;
+  height: 250px;
+}
+
+.ringInner {
+  position: absolute;
+  inset: 0;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  border-radius: var(--radius-pill);
-  padding: var(--space-4) var(--space-8);
-  animation: ring-breathe 4.5s ease-in-out infinite;
 }
 
-.breathRing[data-paused] {
-  animation-play-state: paused;
+/* uppercase session-state caption (design: 12px / 700 / .14em tracking) */
+.stateLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, var(--color-accent));
 }
 
-@keyframes ring-breathe {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
-  }
-  50% {
-    box-shadow: 0 0 60px 4px color-mix(in oklch, var(--accent) 22%, transparent);
-  }
+.stateLabel[data-paused] {
+  color: var(--color-ink-faint);
 }
 
 .statusLine {
@@ -146,10 +153,13 @@
   gap: var(--space-3);
 }
 
+/* session note sits under the ring like the design's focus title (15px / 600) */
 .note {
-  font-size: var(--text-lg);
-  color: var(--color-ink-soft);
-  max-width: 22rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink);
+  max-width: 17rem;
+  text-wrap: pretty;
 }
 
 .timerBlock {
@@ -160,12 +170,12 @@
 }
 
 .clock {
+  /* Instrument Serif display clock (design: 56px serif, single 400 weight) */
   font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   font-size: var(--text-timer);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 400;
   color: var(--color-ink);
   line-height: 1;
 }
@@ -184,15 +194,16 @@
   width: 100%;
 }
 
+/* primary control pill: accent-filled per design (13px 30px / 999px radius) */
 .pauseButton {
-  padding: var(--space-3) var(--space-8);
+  padding: 0.8125rem 1.875rem;
+  min-width: 6.75rem;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  border: 1px solid var(--color-hairline);
-  box-shadow: var(--shadow-sm);
+  background: var(--accent, var(--color-accent));
+  border: none;
   font-size: var(--text-base);
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--color-accent-ink);
   transition: transform var(--duration-fast) var(--ease-out-expo);
 }
 
@@ -207,7 +218,7 @@
 
 .endButton {
   --ring-track: var(--color-hairline);
-  --ring-fill: var(--accent);
+  --ring-fill: var(--accent, var(--color-accent));
   position: relative;
   width: 96px;
   height: 96px;
@@ -215,7 +226,8 @@
   place-items: center;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-sm);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;

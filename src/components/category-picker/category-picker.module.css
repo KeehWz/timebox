@@ -187,3 +187,150 @@
   font-size: var(--text-sm);
   color: var(--color-ink-faint);
 }
+
+/* --- custom focus types (design: self-designed focus) --- */
+
+.tileImg {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  display: block;
+}
+
+.newTile {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-ink-faint);
+  background: none;
+  color: var(--color-ink-soft);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.newTile:hover {
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: oklch(20% 0.01 85 / 0.35);
+  display: grid;
+  place-items: end center;
+  padding: var(--space-4);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6) var(--space-4) calc(var(--safe-bottom) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: sheet-up var(--duration-normal) var(--ease-out-expo);
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheetTitle {
+  font-size: var(--text-xl);
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.emojiField {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fieldLegend {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  padding: 0;
+  margin-bottom: var(--space-2);
+}
+
+.emojiRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.emojiBtn {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  transition: border-color var(--duration-fast) var(--ease-out-expo);
+}
+
+.emojiBtn:hover {
+  border-color: var(--color-ink-faint);
+}
+
+.emojiOn {
+  border-color: var(--color-accent);
+  background: var(--color-soft);
+}
+
+.sheetPreview {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--color-hairline);
+}
+
+.sheetError {
+  color: oklch(55% 0.19 25);
+  font-size: var(--text-sm);
+}
+
+.sheetActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sheetActions .startButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

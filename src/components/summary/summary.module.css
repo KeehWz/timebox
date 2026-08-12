@@ -19,7 +19,7 @@
   height: 2rem;
   border-radius: var(--radius-pill);
   background: color-mix(in oklch, var(--cat-chores) 80%, black);
-  color: oklch(99% 0 0);
+  color: var(--color-accent-ink);
   font-weight: 700;
 }
 
@@ -71,6 +71,7 @@
 }
 
 .statsHeading {
+  font-family: var(--font-sans); /* kicker labels stay sans (design) even on headings */
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-ink-faint);
@@ -201,8 +202,8 @@
 }
 
 .primary {
-  background: var(--color-ink);
-  color: oklch(99% 0 0);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 .secondary {
@@ -214,4 +215,29 @@
 .primary:active,
 .secondary:active {
   transform: scale(0.98);
+}
+
+/* --- task-linked session: one-tap task completion (design Done flow) --- */
+
+.taskDoneBtn {
+  border: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-6);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  align-self: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.taskDoneBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.taskDoneNote {
+  text-align: center;
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
 }

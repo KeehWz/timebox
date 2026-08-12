@@ -68,8 +68,8 @@
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   border: none;
-  background: var(--color-ink);
-  color: var(--color-bg);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
   font-size: var(--text-base);
   font-weight: 600;
   cursor: pointer;
@@ -129,6 +129,7 @@
 }
 
 .challengeTitle {
+  font-family: var(--font-sans); /* kicker labels stay sans (design) even on headings */
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-ink-soft);

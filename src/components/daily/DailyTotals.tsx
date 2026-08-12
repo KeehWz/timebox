@@ -3,8 +3,9 @@ import type { Session } from '../../domain/session'
 import type { CheckIn } from '../../domain/checkIn'
 import type { DailyDirection } from '../../domain/dailyDirection'
 import { compareToDirections } from '../../domain/dailyDirection'
-import { CATEGORIES, getCategory } from '../../domain/categories'
+import { categoryAccent } from '../../domain/categories'
 import { formatDuration, summarizeDay } from '../../domain/time'
+import { useCategoryResolver } from '../../hooks/useCategoryResolver'
 import { useT } from '../../i18n/I18nContext'
 import styles from './daily.module.css'
 
@@ -17,11 +18,10 @@ interface DailyTotalsProps {
 
 export function DailyTotals({ sessions, checkIns = [], directions = [], now }: DailyTotalsProps) {
   const { t, locale } = useT()
+  const resolve = useCategoryResolver()
   const summary = summarizeDay(sessions, now)
-  const entries = CATEGORIES.map((category) => ({
-    category,
-    ms: summary.byCategory[category.id] ?? 0,
-  }))
+  const entries = Object.entries(summary.byCategory)
+    .map(([id, ms]) => ({ category: resolve(id), ms }))
     .filter((entry) => entry.ms > 0)
     .sort((a, b) => b.ms - a.ms)
 
@@ -37,10 +37,10 @@ export function DailyTotals({ sessions, checkIns = [], directions = [], now }: D
           <li
             key={category.id}
             className={styles.totalRow}
-            style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
+            style={{ '--accent': categoryAccent(category) } as CSSProperties}
           >
             <span className={styles.totalDot} aria-hidden="true" />
-            <span className={styles.totalLabel}>{t(`category.${category.id}.label`)}</span>
+            <span className={styles.totalLabel}>{category.displayLabel}</span>
             <span className={styles.totalValue}>{formatDuration(ms, locale)}</span>
           </li>
         ))}
@@ -52,17 +52,15 @@ export function DailyTotals({ sessions, checkIns = [], directions = [], now }: D
           <h3 className={styles.vsTitle}>{t('daily.vsTitle')}</h3>
           <ul className={styles.totalsList}>
             {comparisons.map((row) => {
-              const category = getCategory(row.categoryId)
+              const category = resolve(row.categoryId)
               return (
                 <li
                   key={row.categoryId}
                   className={styles.totalRow}
-                  style={{ '--accent': `var(${category.colorVar})` } as CSSProperties}
+                  style={{ '--accent': categoryAccent(category) } as CSSProperties}
                 >
                   <span className={styles.totalDot} aria-hidden="true" />
-                  <span className={styles.totalLabel}>
-                    {t(`category.${row.categoryId}.label`)}
-                  </span>
+                  <span className={styles.totalLabel}>{category.displayLabel}</span>
                   <span className={styles.totalValue}>
                     {row.targetDurationMs === null
                       ? formatDuration(row.actualMs, locale)
