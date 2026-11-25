@@ -15,6 +15,7 @@ beforeEach(async () => {
   await db.open()
   fetchMock.mockReset()
   vi.stubGlobal('fetch', fetchMock)
+  await updateSettings({ usageNoticeSeen: true })
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -95,6 +96,34 @@ describe('usage events', () => {
     const queued = await outbox()
     expect(queued).toHaveLength(500)
     expect(queued[0].ts).toBe(5)
+  })
+})
+
+describe('before the first-launch note is answered', () => {
+  beforeEach(() => updateSettings({ usageNoticeSeen: false }))
+
+  it('queues events but sends nothing', async () => {
+    respond(200)
+    await track('app_open', undefined, 1000)
+    await flush()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await outbox()).toEqual([{ name: 'app_open', ts: 1000 }])
+  })
+
+  it('sends what was queued once the note is accepted', async () => {
+    respond(200)
+    await track('app_open', undefined, 1000)
+    await updateSettings({ usageNoticeSeen: true })
+    await flush()
+    expect(sentBody().events).toEqual([{ name: 'app_open', ts: 1000 }])
+  })
+
+  it('discards what was queued when the note is declined', async () => {
+    await track('app_open')
+    await updateSettings({ usageNoticeSeen: true, shareUsage: false })
+    await flush()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await outbox()).toEqual([])
   })
 })
 

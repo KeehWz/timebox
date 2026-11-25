@@ -56,6 +56,8 @@ All of these must pass before a PR.
 - Events carry counts, flags and durations only. Never send anything the user typed (descriptions,
   category names, reflections); the validator rejects string props so this cannot happen by accident.
 - Add a new event by adding its name to `EVENT_NAMES` and calling `record()` from `App.tsx`.
+- Sharing is on by default, and said so: a privacy note on first launch asks "Sounds good" /
+  "Don't share". Events queue from launch but nothing is sent until the note is answered.
 - Events wait in a local outbox and are sent when online. "Share anonymous usage" in Settings turns
   them off and discards the outbox. Feedback is always sent — the user chose to write it.
 - Identity is a random install id. No account, no IP address stored.

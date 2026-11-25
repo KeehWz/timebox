@@ -7,6 +7,12 @@ async function holdToEnd(page: Page) {
   await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible()
 }
 
+/** Open the app and answer the first-launch privacy note. */
+async function openApp(page: Page) {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Sounds good', exact: true }).click()
+}
+
 async function startWorkSession(page: Page) {
   await page.getByRole('button', { name: /^Open Work settings Work/ }).click()
   await expect(page.getByRole('heading', { name: 'What are you working on?' })).toBeVisible()
@@ -16,7 +22,7 @@ async function startWorkSession(page: Page) {
 }
 
 test('a day: start, record, review, direction, end', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
 
   // Start Today
   await page.getByRole('button', { name: 'Start Today' }).click()
@@ -83,7 +89,7 @@ test('a day: start, record, review, direction, end', async ({ page }) => {
 })
 
 test('a running session survives a reload', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Start Today' }).click()
   await startWorkSession(page)
 
@@ -95,7 +101,7 @@ test('a running session survives a reload', async ({ page }) => {
 })
 
 test('a new category can be added and used', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Add category' }).click()
   await page.getByLabel('Category name').fill('Reading')
   await page.getByRole('button', { name: 'Choose study icon' }).click()
@@ -112,7 +118,7 @@ test('a new category can be added and used', async ({ page }) => {
 
 test('a day that was never ended closes itself after 4am', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-10T09:00:00') })
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Start Today', exact: true }).click()
   await expect(page.getByText('since start')).toBeVisible()
 
@@ -130,7 +136,7 @@ test('a day that was never ended closes itself after 4am', async ({ page }) => {
 
 test('ending an overnight session by keyboard closes the stale day', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-10T23:00:00') })
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Start Today', exact: true }).click()
   await startWorkSession(page)
 
@@ -173,7 +179,7 @@ test('usage events and feedback reach the API, without anything the user typed',
   })
   const eventNames = () => batches.flatMap(batch => batch.events.map(event => event.name))
 
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Start Today', exact: true }).click()
   await startWorkSession(page)
   await holdToEnd(page)
@@ -206,4 +212,44 @@ test('usage events and feedback reach the API, without anything the user typed',
   await expect(page.getByText('Day timeline', { exact: true })).toBeVisible()
   await page.waitForTimeout(500)
   expect(eventNames()).not.toContain('stats_view')
+})
+
+test('the privacy note is shown once and nothing is sent before it is answered', async ({ page }) => {
+  const batches: { events: { name: string }[] }[] = []
+  await page.route('**/api/events', async route => {
+    batches.push(route.request().postDataJSON())
+    await route.fulfill({ status: 200, json: { saved: 1 } })
+  })
+
+  await page.goto('/')
+  const note = page.getByRole('dialog', { name: 'A note on privacy', exact: true })
+  await expect(note).toBeVisible()
+  await page.mouse.click(200, 30) // tapping outside does not dismiss it
+  await page.waitForTimeout(500)
+  await expect(note).toBeVisible()
+  expect(batches).toEqual([])
+
+  await note.getByRole('button', { name: 'Sounds good', exact: true }).click()
+  await expect(note).toHaveCount(0)
+  await expect.poll(() => batches.flatMap(batch => batch.events.map(event => event.name))).toContain('app_open')
+
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Start Today', exact: true })).toBeVisible()
+  await expect(note).toHaveCount(0)
+})
+
+test('declining the privacy note turns sharing off and sends nothing', async ({ page }) => {
+  let requests = 0
+  await page.route('**/api/events', async route => {
+    requests++
+    await route.fulfill({ status: 200, json: { saved: 1 } })
+  })
+
+  await page.goto('/')
+  await page.getByRole('button', { name: "Don't share", exact: true }).click()
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click()
+  await expect(page.getByRole('switch', { name: /^Share anonymous usage/ })).toHaveAttribute('aria-checked', 'false')
+  await page.waitForTimeout(500)
+  expect(requests).toBe(0)
 })

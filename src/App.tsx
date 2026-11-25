@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useAppState, useStorageFailed } from './data/useAppState'
 import * as store from './data/store'
-import { record, sendFeedback } from './data/telemetry'
+import { flush, record, sendFeedback } from './data/telemetry'
 import { DEFAULT_TYPES } from './domain/defaults'
 import { sessionDuration } from './domain/time'
 import type { Session } from './domain/types'
@@ -16,6 +16,7 @@ import { StatsScreen } from './screens/StatsScreen'
 import { EndDayReflectionScreen } from './screens/EndDayReflectionScreen'
 import { SettingsSheet } from './screens/SettingsSheet'
 import { StorageUnavailable } from './screens/StorageUnavailable'
+import { UsageNotice } from './screens/UsageNotice'
 
 type View = 'record' | 'session-setup' | 'session-end' | 'direction' | 'stats'
 type Screen = View | 'active' | 'end-day-reflection'
@@ -70,6 +71,11 @@ export default function App() {
     } else setView('record')
     // The stale-day check is skipped while a session runs, so repeat it once the session is over.
     await store.closeStaleDay(Date.now())
+  }
+
+  // Events queued since launch are sent once the note is accepted, or discarded if it is declined.
+  const answerUsageNotice = (shareUsage: boolean) => {
+    run(store.updateSettings({ usageNoticeSeen: true, shareUsage }).then(flush))
   }
 
   const openStats = () => {
@@ -200,6 +206,12 @@ export default function App() {
               />
             )}
           </div>
+        )}
+        {state && !state.settings.usageNoticeSeen && (
+          <UsageNotice
+            onAccept={() => answerUsageNotice(true)}
+            onDecline={() => answerUsageNotice(false)}
+          />
         )}
         {state && showSettings && (
           <SettingsSheet

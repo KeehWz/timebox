@@ -4,7 +4,7 @@ import { MAX_EVENTS_PER_BATCH, type EventName, type EventProps, type TelemetryEv
 import { newId } from '../lib/id'
 
 // Usage events wait in a local outbox and are sent when the network allows, so an offline day
-// still counts. Nothing here may throw into the app: recording is best-effort by design.
+// still counts. They are also held back until the user has answered the first-launch note. Nothing here may throw into the app: recording is best-effort by design.
 
 const OUTBOX_LIMIT = 500
 
@@ -44,10 +44,13 @@ async function post(path: string, body: unknown): Promise<number> {
 }
 
 async function sendOutbox() {
-  if (!(await getSettings()).shareUsage) {
+  const settings = await getSettings()
+  if (!settings.shareUsage) {
     await db.kv.delete('outbox') // sharing was turned off: discard what was waiting
     return
   }
+  // Nothing leaves the device until the first-launch privacy note has been answered.
+  if (!settings.usageNoticeSeen) return
   const batch = (await getKv<TelemetryEvent[]>('outbox', [])).slice(0, MAX_EVENTS_PER_BATCH)
   if (batch.length === 0) return
   const status = await post('/api/events', { installId: await installId(), appVersion: __APP_VERSION__, events: batch })
