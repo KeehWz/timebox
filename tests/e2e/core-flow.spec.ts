@@ -62,6 +62,9 @@ test('a day: start, record, review, direction, end', async ({ page }) => {
   await page.getByRole('button', { name: 'End Today' }).first().click()
   await page.locator('.end-confirm').getByRole('button', { name: 'End Today' }).click()
   await expect(page.getByText('recorded', { exact: true })).toBeVisible()
+  // An unfinished reflection reopens after a reload
+  await page.reload()
+  await expect(page.getByText('recorded', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByText('around 1h')).toBeVisible()
   await page.getByRole('button', { name: 'Continue' }).click()
@@ -105,4 +108,54 @@ test('a new category can be added and used', async ({ page }) => {
   await holdToEnd(page)
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByText('since start')).toBeVisible()
+})
+
+test('a day that was never ended closes itself after 4am', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-10T09:00:00') })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Same night: still the same day
+  await page.clock.setSystemTime(new Date('2026-11-11T01:00:00'))
+  await page.reload()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Next morning: yesterday is closed and today has not started
+  await page.clock.setSystemTime(new Date('2026-11-11T09:00:00'))
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Start Today', exact: true })).toBeEnabled()
+  await expect(page.getByText('since start')).toHaveCount(0)
+})
+
+test('ending an overnight session by keyboard closes the stale day', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-10T23:00:00') })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  await startWorkSession(page)
+
+  // Next morning the session is still running, so the day stays open
+  await page.clock.setSystemTime(new Date('2026-11-11T09:00:00'))
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Pause session', exact: true })).toBeVisible()
+
+  // No pointer: Enter asks for confirmation instead of requiring a hold
+  await page.getByRole('button', { name: 'Hold to end session', exact: true }).press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'End session', exact: true })
+  await dialog.getByRole('button', { name: 'Not yet', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole('button', { name: 'Hold to end session', exact: true }).press('Enter')
+  await dialog.getByRole('button', { name: 'End session', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Start Today', exact: true })).toBeEnabled()
+})
+
+test('says so when the local database cannot be opened', async ({ page }) => {
+  await page.addInitScript(() => {
+    IDBFactory.prototype.open = () => { throw new DOMException('blocked', 'SecurityError') }
+  })
+  await page.goto('/')
+  await expect(page.getByText("TimeBox couldn't open its storage", { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reload', exact: true })).toBeVisible()
 })

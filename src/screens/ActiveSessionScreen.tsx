@@ -13,6 +13,7 @@ export function ActiveSessionScreen({ active, sessions, dayStartTime, onPause, o
   const elapsed = activeElapsed(active, useNow())
   const [timerVisible, setTimerVisible] = useState(true)
   const [showGlance, setShowGlance] = useState(false)
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
   const touchStartY = useRef(0)
   const accent = PRIMARY_COBALT
 
@@ -71,7 +72,7 @@ export function ActiveSessionScreen({ active, sessions, dayStartTime, onPause, o
           </span>
         </div>
 
-        <HoldToEnd onComplete={onEnd} color={accent} />
+        <HoldToEnd onComplete={onEnd} onConfirmRequest={() => setShowEndConfirm(true)} color={accent} />
       </div>
       <button className="glance-handle" onClick={() => setShowGlance(true)}>Today so far <span>↑</span></button>
 
@@ -93,6 +94,17 @@ export function ActiveSessionScreen({ active, sessions, dayStartTime, onPause, o
         </div>
         <p style={{ fontSize: 12, color: TEXT3, marginTop: 22 }}>Your session keeps recording here.</p>
       </div>
+
+      {showEndConfirm && (
+        <div className="modal-veil" onClick={() => setShowEndConfirm(false)}>
+          <div className="end-confirm animate-fade-in" role="dialog" aria-label="End session" onClick={e => e.stopPropagation()}>
+            <p style={{ fontSize: 12, color: TEXT3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>End session</p>
+            <p style={{ fontSize: 24, fontWeight: 500, color: TEXT, letterSpacing: '-0.02em', marginBottom: 28 }}>Close this recording?</p>
+            <button autoFocus className="confirm-primary" onClick={onEnd}>End session</button>
+            <button className="confirm-secondary" onClick={() => setShowEndConfirm(false)}>Not yet</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

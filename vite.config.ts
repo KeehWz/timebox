@@ -48,7 +48,7 @@ export default defineConfig({
         // Screens are ported from the Figma Make prototype and covered by the e2e flow.
         'src/screens/**',
         'src/ui/**',
-        'src/data/useAppState.ts',
+        'src/data/useAppState.ts', // thin React bindings; exercised by the e2e flow
         'src/**/*.d.ts',
         'src/vite-env.d.ts',
       ],

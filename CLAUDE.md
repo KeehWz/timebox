@@ -38,6 +38,10 @@ All of these must pass before a PR.
 - A day that was never ended is closed quietly on the next open after 4am, ending at its last recording.
 - Today's Direction is cleared when the day closes. Closed days are archived in the `days` table.
 - `sessions` holds finished recordings only; `typeName` is copied in so history survives renames/deletes.
+- Ending a session takes a 900ms hold. A click with no pointer behind it (keyboard, switch control)
+  cannot hold, so it opens a confirm dialog instead.
+- If the local database cannot be opened, `StorageUnavailable` is shown. The live query never
+  resolves in that case and does not throw, so an error boundary would not catch it.
 - No `Date.now()` / `new Date()` during render — use `useNow()` (the React Compiler lint rule enforces this).
 
 ## Not wired yet

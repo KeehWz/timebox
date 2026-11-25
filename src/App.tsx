@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { useAppState } from './data/useAppState'
+import { useAppState, useStorageFailed } from './data/useAppState'
 import * as store from './data/store'
 import type { Session } from './domain/types'
 import { WHITE } from './ui/tokens'
@@ -12,6 +12,7 @@ import { DirectionScreen } from './screens/DirectionScreen'
 import { StatsScreen } from './screens/StatsScreen'
 import { EndDayReflectionScreen } from './screens/EndDayReflectionScreen'
 import { SettingsSheet } from './screens/SettingsSheet'
+import { StorageUnavailable } from './screens/StorageUnavailable'
 
 type View = 'record' | 'session-setup' | 'session-end' | 'direction' | 'stats'
 type Screen = View | 'active' | 'end-day-reflection'
@@ -25,6 +26,7 @@ function run(write: Promise<unknown>) {
 
 export default function App() {
   const state = useAppState()
+  const storageFailed = useStorageFailed()
   const [view, setView] = useState<View>('record')
   const [selectedTypeId, setSelectedTypeId] = useState('')
   const [lastSession, setLastSession] = useState<Session | null>(null)
@@ -50,6 +52,8 @@ export default function App() {
     const finished = await store.endSession(Date.now())
     if (finished) setLastSession(finished)
     else setView('record')
+    // The stale-day check is skipped while a session runs, so repeat it once the session is over.
+    await store.closeStaleDay(Date.now())
   }
 
   const handlePageSwipeStart = (event: ReactPointerEvent) => {
@@ -88,6 +92,8 @@ export default function App() {
             </svg>
           </button>
         )}
+
+        {!state && storageFailed && <StorageUnavailable />}
 
         {state && (
           <div
