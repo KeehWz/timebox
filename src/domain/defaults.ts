@@ -19,7 +19,7 @@ export const ROUGH_AMOUNTS = ['no amount', '30m', '1h', '2h', '3h']
 
 export const DEFAULT_DAY: DayState = { started: false, startTime: 0, endTime: 0 }
 
-export const DEFAULT_SETTINGS: Settings = { nudgeAfter: '90', customNudgeMinutes: 90 }
+export const DEFAULT_SETTINGS: Settings = { nudgeAfter: '90', customNudgeMinutes: 90, shareUsage: true }
 
 /** Presets for a category, falling back to the built-in list for the default categories. */
 export function presetsFor(type: SessionType): string[] {
