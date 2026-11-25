@@ -36,6 +36,17 @@ export const SCHEMA = [
 ]
 
 const MAX_BODY_LENGTH = 64 * 1024
+const DAY_MS = 86_400_000
+
+/**
+ * Device timestamps drive the retention numbers, so one wrong clock would skew them. A time more
+ * than a day ahead or a month behind the server is replaced by the arrival time. A month allows
+ * for events queued during a long offline stretch.
+ */
+function plausibleTime(ts: number, now: number) {
+  const rounded = Math.round(ts)
+  return rounded > now + DAY_MS || rounded < now - 30 * DAY_MS ? now : rounded
+}
 
 // The schema is created on first use, once per isolate, so deploying needs no migration step.
 const ready = new WeakMap<D1, Promise<unknown>>()
@@ -55,6 +66,10 @@ function json(body: unknown, status: number) {
 
 async function readJson(request: Request): Promise<{ ok: true; value: unknown } | { ok: false; response: Response }> {
   if (request.method !== 'POST') return { ok: false, response: json({ error: 'method not allowed' }, 405) }
+  // Refuse on the declared size first, so an oversized body is never buffered.
+  if (Number(request.headers.get('content-length')) > MAX_BODY_LENGTH) {
+    return { ok: false, response: json({ error: 'too large' }, 413) }
+  }
   const text = await request.text()
   if (text.length > MAX_BODY_LENGTH) return { ok: false, response: json({ error: 'too large' }, 413) }
   try {
@@ -80,7 +95,7 @@ async function saveEvents(request: Request, db: D1, now: number) {
         payload.appVersion,
         event.name,
         event.props ? JSON.stringify(event.props) : null,
-        Math.round(event.ts),
+        plausibleTime(event.ts, now),
         now,
       ),
     ),

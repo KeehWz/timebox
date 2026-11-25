@@ -75,6 +75,31 @@ describe('POST /api/events', () => {
     expect(env.DB.batches).toBe(0)
   })
 
+  it('stores the arrival time when a device clock is far off, so one bad clock cannot skew retention', async () => {
+    await post('/api/events', {
+      ...base,
+      events: [
+        { name: 'app_open', ts: 0 },
+        { name: 'app_open', ts: NOW - 31 * DAY },
+        { name: 'app_open', ts: NOW + 2 * DAY },
+        { name: 'app_open', ts: NOW - 29 * DAY }, // a long offline stretch is still believed
+        { name: 'app_open', ts: NOW + DAY / 2 }, // as is a clock a few hours ahead
+      ],
+    })
+    expect(rows('SELECT ts FROM events ORDER BY id').map(row => row.ts)).toEqual([NOW, NOW, NOW, NOW - 29 * DAY, NOW + DAY / 2])
+  })
+
+  it('refuses an oversized body from its declared length, without reading it', async () => {
+    const request = new Request('https://timebox.test/api/events', {
+      method: 'POST',
+      headers: { 'content-length': '50000000' },
+      body: '{}',
+    })
+    const response = await handle(request, env, NOW)
+    expect(response.status).toBe(413)
+    expect(request.bodyUsed).toBe(false)
+  })
+
   it('only accepts POST', async () => {
     const response = await handle(new Request('https://timebox.test/api/events'), env, NOW)
     expect(response.status).toBe(405)

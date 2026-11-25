@@ -13,7 +13,7 @@ export interface AppState {
   settings: Settings
 }
 
-async function getKv<T>(key: string, fallback: T): Promise<T> {
+export async function getKv<T>(key: string, fallback: T): Promise<T> {
   const row = await db.kv.get(key)
   return row ? (row.value as T) : fallback
 }
@@ -23,7 +23,7 @@ function setKv(key: string, value: unknown) {
 }
 
 /** Stored settings over the defaults, so settings added in a later version get their default. */
-async function getSettings(): Promise<Settings> {
+export async function getSettings(): Promise<Settings> {
   return { ...DEFAULT_SETTINGS, ...(await getKv<Partial<Settings>>('settings', {})) }
 }
 

@@ -26,8 +26,15 @@ export function SettingsSheet({ settings, onChange, onSendFeedback, onClose }: {
     if (ok) setMessage('')
   }
 
+  // A tap outside the sheet closes it — except while a feedback message is being written, where
+  // the same tap (often meant to dismiss the keyboard) would throw the message away.
+  const closeFromVeil = () => {
+    if (view === 'feedback' && message.trim()) return
+    onClose()
+  }
+
   return (
-    <div className="modal-veil" onClick={onClose}>
+    <div className="modal-veil" onClick={closeFromVeil}>
       {view === 'main' && (
         <div className="end-confirm animate-fade-in" onClick={e => e.stopPropagation()}>
           <p style={{ fontSize: 12, color: TEXT3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>Settings</p>

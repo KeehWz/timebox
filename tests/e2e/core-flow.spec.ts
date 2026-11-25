@@ -188,6 +188,9 @@ test('usage events and feedback reach the API, without anything the user typed',
   await page.getByRole('button', { name: 'Open settings', exact: true }).click()
   await page.getByRole('button', { name: 'Send feedback', exact: true }).click()
   await page.getByRole('textbox', { name: 'Your feedback', exact: true }).fill('The timeline is lovely.')
+  // A stray tap outside the sheet must not throw away what was typed
+  await page.mouse.click(200, 30)
+  await expect(page.getByRole('textbox', { name: 'Your feedback', exact: true })).toHaveValue('The timeline is lovely.')
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByText('Sent. Thank you for taking the time.', { exact: true })).toBeVisible()
   expect(feedback).toMatchObject([{ message: 'The timeline is lovely.' }])

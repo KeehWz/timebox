@@ -1,22 +1,12 @@
 import { db } from './db'
-import { DEFAULT_SETTINGS } from '../domain/defaults'
+import { getKv, getSettings } from './store'
 import { MAX_EVENTS_PER_BATCH, type EventName, type EventProps, type TelemetryEvent } from '../domain/telemetry'
-import type { Settings } from '../domain/types'
 import { newId } from '../lib/id'
 
 // Usage events wait in a local outbox and are sent when the network allows, so an offline day
 // still counts. Nothing here may throw into the app: recording is best-effort by design.
 
 const OUTBOX_LIMIT = 500
-
-async function getKv<T>(key: string, fallback: T): Promise<T> {
-  const row = await db.kv.get(key)
-  return row ? (row.value as T) : fallback
-}
-
-async function sharingEnabled() {
-  return { ...DEFAULT_SETTINGS, ...(await getKv<Partial<Settings>>('settings', {})) }.shareUsage
-}
 
 /** A random id for this install. It is not tied to an account, a device identifier or an IP. */
 async function installId(): Promise<string> {
@@ -32,7 +22,7 @@ async function installId(): Promise<string> {
 /** Queue one event. Does nothing when the user has turned usage sharing off. */
 export function track(name: EventName, props?: EventProps, now = Date.now()) {
   return db.transaction('rw', db.kv, async () => {
-    if (!(await sharingEnabled())) return
+    if (!(await getSettings()).shareUsage) return
     const outbox = await getKv<TelemetryEvent[]>('outbox', [])
     outbox.push(props ? { name, ts: now, props } : { name, ts: now })
     await db.kv.put({ key: 'outbox', value: outbox.slice(-OUTBOX_LIMIT) })
@@ -54,7 +44,7 @@ async function post(path: string, body: unknown): Promise<number> {
 }
 
 async function sendOutbox() {
-  if (!(await sharingEnabled())) {
+  if (!(await getSettings()).shareUsage) {
     await db.kv.delete('outbox') // sharing was turned off: discard what was waiting
     return
   }
