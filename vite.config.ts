@@ -1,20 +1,22 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/  +  https://vitest.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Timebox · 时间记录',
-        short_name: 'Timebox',
-        description: '轻量化 Session 时间记录',
-        lang: 'zh-CN',
-        theme_color: '#fbfbf7',
-        background_color: '#fbfbf7',
+        name: 'TimeBox',
+        short_name: 'TimeBox',
+        description: 'A quiet record of where your time goes',
+        lang: 'en',
+        theme_color: '#F2F6FF',
+        background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -43,8 +45,10 @@ export default defineConfig({
         'src/test/**',
         'src/main.tsx',
         'src/App.tsx',
-        'src/routes/**',
-        'src/components/shell/AppShell.tsx',
+        // Screens are ported from the Figma Make prototype and covered by the e2e flow.
+        'src/screens/**',
+        'src/ui/**',
+        'src/data/useAppState.ts',
         'src/**/*.d.ts',
         'src/vite-env.d.ts',
       ],
