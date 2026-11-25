@@ -13,13 +13,18 @@ export interface AppState {
   settings: Settings
 }
 
-async function getKv<T>(key: string, fallback: T): Promise<T> {
+export async function getKv<T>(key: string, fallback: T): Promise<T> {
   const row = await db.kv.get(key)
   return row ? (row.value as T) : fallback
 }
 
 function setKv(key: string, value: unknown) {
   return db.kv.put({ key, value })
+}
+
+/** Stored settings over the defaults, so settings added in a later version get their default. */
+export async function getSettings(): Promise<Settings> {
+  return { ...DEFAULT_SETTINGS, ...(await getKv<Partial<Settings>>('settings', {})) }
 }
 
 /** Everything the UI renders from, read in one snapshot. */
@@ -30,7 +35,7 @@ export function loadState(): Promise<AppState> {
     directions: await getKv<Direction[]>('directions', []),
     day: await getKv('day', DEFAULT_DAY),
     active: await getKv<ActiveSession | null>('active', null),
-    settings: await getKv('settings', DEFAULT_SETTINGS),
+    settings: await getSettings(),
   }))
 }
 
@@ -194,6 +199,6 @@ export function addPreset(typeId: string, preset: string) {
 
 export function updateSettings(updates: Partial<Settings>) {
   return db.transaction('rw', db.kv, async () => {
-    await setKv('settings', { ...(await getKv('settings', DEFAULT_SETTINGS)), ...updates })
+    await setKv('settings', { ...(await getSettings()), ...updates })
   })
 }

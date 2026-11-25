@@ -56,6 +56,8 @@ export interface DayState {
 export interface Settings {
   nudgeAfter: string // 'off' | '60' | '90' | '120' | 'custom'
   customNudgeMinutes: number
+  shareUsage: boolean // anonymous usage events; see domain/telemetry.ts
+  usageNoticeSeen: boolean // the first-launch privacy note has been answered
 }
 
 /** A closed day, kept so reflections and day boundaries are not lost. */

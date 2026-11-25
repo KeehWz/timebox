@@ -160,7 +160,7 @@ describe('settings', () => {
   it('merges setting updates', async () => {
     await updateSettings({ nudgeAfter: 'custom', customNudgeMinutes: 45 })
     await updateSettings({ nudgeAfter: 'off' })
-    expect((await loadState()).settings).toEqual({ nudgeAfter: 'off', customNudgeMinutes: 45 })
+    expect((await loadState()).settings).toEqual({ nudgeAfter: 'off', customNudgeMinutes: 45, shareUsage: true, usageNoticeSeen: false })
   })
 })
 

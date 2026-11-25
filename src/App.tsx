@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useAppState, useStorageFailed } from './data/useAppState'
 import * as store from './data/store'
+import { flush, record, sendFeedback } from './data/telemetry'
+import { DEFAULT_TYPES } from './domain/defaults'
+import { sessionDuration } from './domain/time'
 import type { Session } from './domain/types'
 import { WHITE } from './ui/tokens'
 import { RecordScreen } from './screens/RecordScreen'
@@ -13,11 +16,17 @@ import { StatsScreen } from './screens/StatsScreen'
 import { EndDayReflectionScreen } from './screens/EndDayReflectionScreen'
 import { SettingsSheet } from './screens/SettingsSheet'
 import { StorageUnavailable } from './screens/StorageUnavailable'
+import { UsageNotice } from './screens/UsageNotice'
 
 type View = 'record' | 'session-setup' | 'session-end' | 'direction' | 'stats'
 type Screen = View | 'active' | 'end-day-reflection'
 
 const PAGES: Screen[] = ['direction', 'record', 'stats']
+
+/** Usage events only say whether a category is one of the defaults, never its name. */
+function isBuiltin(typeId: string) {
+  return DEFAULT_TYPES.some(type => type.id === typeId)
+}
 
 /** Fire a store write; the live query re-renders the UI when it lands. */
 function run(write: Promise<unknown>) {
@@ -32,6 +41,8 @@ export default function App() {
   const [lastSession, setLastSession] = useState<Session | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const pageSwipeStart = useRef<{ x: number; y: number } | null>(null)
+
+  useEffect(() => record('app_open'), [])
 
   // A day that was never ended is closed quietly when the app is next opened after 4am.
   useEffect(() => {
@@ -50,10 +61,26 @@ export default function App() {
     setLastSession(null)
     setView('session-end')
     const finished = await store.endSession(Date.now())
-    if (finished) setLastSession(finished)
-    else setView('record')
+    if (finished) {
+      setLastSession(finished)
+      record('session_end', {
+        minutes: Math.round(sessionDuration(finished) / 60000),
+        builtin: isBuiltin(finished.typeId),
+        focus: finished.focusedDuration !== undefined,
+      })
+    } else setView('record')
     // The stale-day check is skipped while a session runs, so repeat it once the session is over.
     await store.closeStaleDay(Date.now())
+  }
+
+  // Events queued since launch are sent once the note is accepted, or discarded if it is declined.
+  const answerUsageNotice = (shareUsage: boolean) => {
+    run(store.updateSettings({ usageNoticeSeen: true, shareUsage }).then(flush))
+  }
+
+  const openStats = () => {
+    setView('stats')
+    record('stats_view')
   }
 
   const handlePageSwipeStart = (event: ReactPointerEvent) => {
@@ -70,7 +97,7 @@ export default function App() {
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return
     if (deltaX < 0) {
       if (screen === 'direction') setView('record')
-      else if (screen === 'record') setView('stats')
+      else if (screen === 'record') openStats()
     } else {
       if (screen === 'stats') setView('record')
       else if (screen === 'record') setView('direction')
@@ -107,15 +134,15 @@ export default function App() {
                 sessionTypes={state.sessionTypes} directions={state.directions}
                 sessions={state.sessions} dayStartTime={state.day.startTime}
                 dayStarted={state.day.started}
-                onStartToday={() => run(store.startDay(Date.now()))}
-                onSetDirection={() => { run(store.startDay(Date.now())); setView('direction') }}
+                onStartToday={() => { run(store.startDay(Date.now())); record('day_start') }}
+                onSetDirection={() => { run(store.startDay(Date.now())); record('day_start'); setView('direction') }}
                 onDirection={() => setView('direction')}
-                onStats={() => setView('stats')}
+                onStats={openStats}
                 onSessionDrop={typeId => { setSelectedTypeId(typeId); setView('session-setup') }}
-                onEndToday={() => run(store.markDayEnd(Date.now()))}
+                onEndToday={() => { run(store.markDayEnd(Date.now())); record('day_end') }}
                 onUpdateType={(typeId, updates) => run(store.updateType(typeId, updates))}
                 onDeleteType={typeId => run(store.deleteType(typeId))}
-                onCreateType={type => run(store.createType(type))}
+                onCreateType={type => { run(store.createType(type)); record('category_create') }}
               />
             )}
             {screen === 'session-setup' && (
@@ -123,8 +150,15 @@ export default function App() {
                 typeId={selectedTypeId}
                 sessionTypes={state.sessionTypes}
                 directions={state.directions}
-                onStart={(description, focusEnabled, reminder) =>
-                  run(store.startSession({ typeId: selectedTypeId, description, focusEnabled, reminder }, Date.now()))}
+                onStart={(description, focusEnabled, reminder) => {
+                  run(store.startSession({ typeId: selectedTypeId, description, focusEnabled, reminder }, Date.now()))
+                  record('session_start', {
+                    builtin: isBuiltin(selectedTypeId),
+                    focus: focusEnabled,
+                    nudge: reminder !== '',
+                    described: description.trim() !== '',
+                  })
+                }}
                 onBack={() => setView('record')}
                 onAddPreset={(typeId, preset) => run(store.addPreset(typeId, preset))}
               />
@@ -147,7 +181,7 @@ export default function App() {
               <DirectionScreen
                 sessionTypes={state.sessionTypes}
                 directions={state.directions}
-                onUpdate={directions => run(store.setDirections(directions))}
+                onUpdate={directions => { run(store.setDirections(directions)); record('direction_set', { count: directions.length }) }}
                 onRecord={() => setView('record')}
               />
             )}
@@ -164,15 +198,26 @@ export default function App() {
                 sessions={state.sessions} directions={state.directions}
                 dayStartTime={state.day.startTime} dayEndTime={state.day.endTime}
                 sessionTypes={state.sessionTypes}
-                onDone={reflection => { run(store.closeDay(reflection, Date.now())); setView('record') }}
+                onDone={reflection => {
+                  run(store.closeDay(reflection, Date.now()))
+                  record('reflection_done', { wrote: reflection.trim() !== '' })
+                  setView('record')
+                }}
               />
             )}
           </div>
+        )}
+        {state && !state.settings.usageNoticeSeen && (
+          <UsageNotice
+            onAccept={() => answerUsageNotice(true)}
+            onDecline={() => answerUsageNotice(false)}
+          />
         )}
         {state && showSettings && (
           <SettingsSheet
             settings={state.settings}
             onChange={updates => run(store.updateSettings(updates))}
+            onSendFeedback={sendFeedback}
             onClose={() => setShowSettings(false)}
           />
         )}
