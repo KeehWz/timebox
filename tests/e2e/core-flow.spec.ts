@@ -47,7 +47,7 @@ test('a day: start, record, review, direction, end', async ({ page }) => {
   await expect(page.locator('.stats-category-name', { hasText: 'Work' })).toBeVisible()
   await page.getByRole('tab', { name: 'Weekly' }).click()
   await expect(page.getByText('Week composition')).toBeVisible()
-  await page.getByRole('button', { name: 'Record' }).click()
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
 
   // Today's Direction: give Work around an hour
   await page.getByRole('button', { name: 'Direction' }).first().click()
@@ -56,7 +56,7 @@ test('a day: start, record, review, direction, end', async ({ page }) => {
   await page.getByRole('button', { name: '1h', exact: true }).click()
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(page.locator('.direction-compact-row.is-selected', { hasText: 'Work' })).toContainText('1h')
-  await page.getByRole('button', { name: 'Record' }).click()
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
 
   // End Today → reflection → back to a fresh day
   await page.getByRole('button', { name: 'End Today' }).first().click()
