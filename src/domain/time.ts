@@ -1,97 +1,114 @@
-import type { CategoryId, Session } from './session'
-import type { Locale } from '../i18n/locale'
-import { activeMs, totalPausedMs, totalSpanMs } from './metrics'
+import type { ActiveSession, DayState, DirectionItem, Session } from './types'
 
-const MS_PER_SECOND = 1000
-const MS_PER_MINUTE = 60 * MS_PER_SECOND
-const MS_PER_HOUR = 60 * MS_PER_MINUTE
+// ── Calendar helpers (local time) ───────────────────────────────────────────
 
-const DURATION_UNITS: Record<Locale, { h: string; m: string; s: string }> = {
-  en: { h: 'h', m: 'm', s: 's' },
-  zh: { h: '时', m: '分', s: '秒' },
+export function startOfDate(date: Date): Date {
+  const next = new Date(date)
+  next.setHours(0, 0, 0, 0)
+  return next
 }
 
-function pad2(n: number): string {
-  return n < 10 ? `0${n}` : String(n)
+export function addCalendarDays(date: Date, amount: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + amount)
+  return startOfDate(next)
 }
 
-/** "HH:MM:SS" — hours grow unbounded, minutes/seconds zero-padded. For the live timer. */
-export function formatClock(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / MS_PER_SECOND))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
+/** Monday-based week start. */
+export function startOfCalendarWeek(date: Date): Date {
+  const start = startOfDate(date)
+  const weekday = start.getDay() || 7
+  return addCalendarDays(start, 1 - weekday)
 }
 
-/** Locale-aware duration: en "1h 14m"/"44s"/"0s"; zh "1时14分"/"44秒"/"0秒". */
-export function formatDuration(ms: number, locale: Locale): string {
-  const u = DURATION_UNITS[locale]
-  const sep = locale === 'zh' ? '' : ' '
-  const clamped = Math.max(0, ms)
-  const hours = Math.floor(clamped / MS_PER_HOUR)
-  const minutes = Math.floor((clamped % MS_PER_HOUR) / MS_PER_MINUTE)
-  const seconds = Math.floor((clamped % MS_PER_MINUTE) / MS_PER_SECOND)
-  if (hours > 0) return `${hours}${u.h}${sep}${minutes}${u.m}`
-  if (minutes > 0) return seconds > 0 ? `${minutes}${u.m}${sep}${seconds}${u.s}` : `${minutes}${u.m}`
-  return `${seconds}${u.s}`
+export function localDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-/** Convenience: English duration. Equivalent to formatDuration(ms, 'en'). */
-export function formatHuman(ms: number): string {
-  return formatDuration(ms, 'en')
+// ── Sessions ────────────────────────────────────────────────────────────────
+
+/** Recorded time of a finished session (wall-clock span minus pauses). */
+export function sessionDuration(session: Session): number {
+  return Math.max(0, session.endTime - session.startTime - session.pausedDuration)
 }
 
-/** "HH:MM" local 24-hour clock for an epoch timestamp. */
-export function formatTimeOfDay(epochMs: number): string {
-  const d = new Date(epochMs)
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+export function sumSessionMs(sessions: Session[], typeId: string, since: number): number {
+  return sessions
+    .filter(s => s.typeId === typeId && s.startTime >= since)
+    .reduce((total, s) => total + sessionDuration(s), 0)
 }
 
-/** Local 'YYYY-MM-DD' for an epoch timestamp. Uses LOCAL date parts (never UTC / toISOString). */
-export function toDayKey(epochMs: number): string {
-  const d = new Date(epochMs)
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+/** Elapsed recorded time of the in-progress session; frozen while paused. */
+export function activeElapsed(active: ActiveSession, now: number): number {
+  const until = active.isPaused && active.pauseStart ? active.pauseStart : now
+  return Math.max(0, until - active.startTime - active.pausedDuration)
 }
 
-/** The dayKey `n` days after the given local dayKey (n may be negative). */
-export function addDays(dayKey: string, n: number): string {
-  const [year, month, day] = dayKey.split('-').map(Number)
-  const date = new Date(year, month - 1, day) // local midnight
-  date.setDate(date.getDate() + n)
-  return toDayKey(date.getTime())
+export function pauseActive(active: ActiveSession, now: number): ActiveSession {
+  if (active.isPaused) return active
+  return { ...active, isPaused: true, pauseStart: now }
 }
 
-/** Localized long date for a local dayKey: zh "2026年5月28日"; en "May 28, 2026". */
-export function dayKeyLabel(dayKey: string, locale: Locale): string {
-  const [year, month, day] = dayKey.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
+export function resumeActive(active: ActiveSession, now: number): ActiveSession {
+  if (!active.isPaused) return active
+  const extra = now - (active.pauseStart ?? now)
+  return { ...active, isPaused: false, pauseStart: undefined, pausedDuration: active.pausedDuration + extra }
 }
 
-export interface DaySummary {
-  byCategory: Partial<Record<CategoryId, number>> // focus ms per category (completed sessions only)
-  pausedTotalMs: number
-  spanTotalMs: number
+/** Close the in-progress session at `now`. An open pause counts as paused time up to `now`. */
+export function finishActive(active: ActiveSession, now: number, id: string): Session {
+  let pausedDuration = active.pausedDuration
+  if (active.isPaused && active.pauseStart) pausedDuration += now - active.pauseStart
+  const recorded = Math.max(0, now - active.startTime - pausedDuration)
+  return {
+    id,
+    typeId: active.typeId,
+    typeName: active.typeName,
+    description: active.description,
+    startTime: active.startTime,
+    endTime: now,
+    pausedDuration,
+    ...(active.focusEnabled ? { focusedDuration: recorded } : {}),
+  }
+}
+
+// ── Day boundary ────────────────────────────────────────────────────────────
+
+/** A "day" rolls over at 4am local, so a late night still belongs to the day it started in. */
+export const DAY_ROLLOVER_HOUR = 4
+
+function rolloverDateKey(ts: number): string {
+  return localDateKey(new Date(ts - DAY_ROLLOVER_HOUR * 3600000))
 }
 
 /**
- * Roll up a day's sessions. Only completed sessions contribute (active ones are still running).
- * Authoritative metric definitions: focus = span − paused; span = end − start.
+ * True when a started day was never closed and we are now past the next 4am rollover.
+ * Such a day is closed quietly on the next open instead of counting unrecorded time forever.
  */
-export function summarizeDay(sessions: readonly Session[], now: number): DaySummary {
-  const byCategory: Partial<Record<CategoryId, number>> = {}
-  let pausedTotalMs = 0
-  let spanTotalMs = 0
-  for (const session of sessions) {
-    if (session.status !== 'completed') continue
-    byCategory[session.categoryId] = (byCategory[session.categoryId] ?? 0) + activeMs(session, now)
-    pausedTotalMs += totalPausedMs(session, now)
-    spanTotalMs += totalSpanMs(session, now)
-  }
-  return { byCategory, pausedTotalMs, spanTotalMs }
+export function isStaleDay(day: DayState, now: number): boolean {
+  if (!day.started || day.endTime) return false
+  return rolloverDateKey(day.startTime) !== rolloverDateKey(now)
+}
+
+// ── Direction amounts ───────────────────────────────────────────────────────
+
+export function roughAmountMinutes(amount: string): number {
+  const hours = amount.match(/^(\d+)h$/)
+  if (hours) return Number(hours[1]) * 60
+  const minutes = amount.match(/^(\d+)m$/)
+  if (minutes) return Number(minutes[1])
+  return 0
+}
+
+export function summarizeDirectionItems(items: DirectionItem[]): string {
+  const totalMinutes = items.reduce((total, item) => total + roughAmountMinutes(item.roughAmount), 0)
+  if (totalMinutes === 0) return 'no amount'
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0 && minutes === 0) return `${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
 }

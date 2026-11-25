@@ -1,79 +1,161 @@
-import { test, expect } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
-test.beforeEach(async ({ page }) => {
+/** Press and hold the End control past its 900ms threshold. */
+async function holdToEnd(page: Page) {
+  const end = page.getByRole('button', { name: 'Hold to end session' })
+  await end.dispatchEvent('pointerdown')
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible()
+}
+
+async function startWorkSession(page: Page) {
+  await page.getByRole('button', { name: /^Open Work settings Work/ }).click()
+  await expect(page.getByRole('heading', { name: 'What are you working on?' })).toBeVisible()
+  await page.getByRole('button', { name: 'Projects', exact: true }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Pause session' })).toBeVisible()
+}
+
+test('a day: start, record, review, direction, end', async ({ page }) => {
   await page.goto('/')
-  // Each Playwright context is isolated, but clear IndexedDB defensively for a clean slate.
-  await page.evaluate(() => indexedDB.deleteDatabase('timebox'))
+
+  // Start Today
+  await page.getByRole('button', { name: 'Start Today' }).click()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Record a Work session with a pause in the middle
+  await startWorkSession(page)
+  await expect(page.getByRole('paragraph').filter({ hasText: 'Projects' })).toBeVisible()
+  await page.getByRole('button', { name: 'Pause session' }).click()
+  await expect(page.getByText('Paused', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Resume session' }).click()
+  await holdToEnd(page)
+
+  // Session summary: the note is editable and only affects this recording
+  await page.getByPlaceholder('What was this time for?').fill('Quarterly report')
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('1 recording', { exact: true })).toBeVisible()
+
+  // Everything survives a reload
   await page.reload()
+  await expect(page.getByText('1 recording', { exact: true })).toBeVisible()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Stats shows the recording on today's timeline and in the breakdown
+  await page.getByRole('button', { name: 'Stats' }).first().click()
+  await expect(page.getByText('Day timeline')).toBeVisible()
+  await expect(page.getByText('By category')).toBeVisible()
+  await expect(page.locator('.stats-category-name', { hasText: 'Work' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Weekly' }).click()
+  await expect(page.getByText('Week composition')).toBeVisible()
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
+
+  // Today's Direction: give Work around an hour
+  await page.getByRole('button', { name: 'Direction' }).first().click()
+  await page.locator('.direction-compact-row', { hasText: 'Work' }).click()
+  await page.getByRole('button', { name: 'General Work' }).click()
+  await page.getByRole('button', { name: '1h', exact: true }).click()
+  await page.getByRole('button', { name: 'Done' }).click()
+  await expect(page.locator('.direction-compact-row.is-selected', { hasText: 'Work' })).toContainText('1h')
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
+
+  // End Today → reflection → back to a fresh day
+  await page.getByRole('button', { name: 'End Today' }).first().click()
+  await page.locator('.end-confirm').getByRole('button', { name: 'End Today' }).click()
+  await expect(page.getByText('recorded', { exact: true })).toBeVisible()
+  // An unfinished reflection reopens after a reload
+  await page.reload()
+  await expect(page.getByText('recorded', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('around 1h')).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('The shape of today')).toBeVisible()
+  await expect(page.getByText('Quarterly report')).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByPlaceholder('Optional reflection...').fill('Steady day.')
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText("That's all for today.")).toBeVisible()
+  await page.getByRole('button', { name: 'Close' }).click()
+
+  await expect(page.getByRole('button', { name: 'Start Today' })).toBeEnabled()
+  // Direction belonged to the day that just closed
+  await page.getByRole('button', { name: 'Direction' }).first().click()
+  await expect(page.locator('.direction-compact-row.is-selected')).toHaveCount(0)
 })
 
-test('core flow: pick → note → timer → pause → resume → long-press end → summary → daily', async ({
-  page,
-}) => {
-  await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
-
-  // pick a type, add a note, start
-  await page.getByRole('button', { name: /工作/ }).click()
-  await page.getByRole('textbox').fill('execution model')
-  await page.getByRole('button', { name: /开始/ }).click()
-
-  // active session with a running clock
-  await expect(page).toHaveURL(/\/active$/)
-  await expect(page.getByText('execution model')).toBeVisible()
-  await expect(page.locator('time')).toBeVisible()
-
-  // quick-pause then resume
-  await page.getByRole('button', { name: '快速暂停' }).click()
-  await expect(page.getByText(/已暂停/)).toBeVisible()
-  await page.getByRole('button', { name: '继续' }).click()
-
-  // long-press to end (hold past HOLD_DURATION_MS = 1700ms)
-  await page.getByRole('button', { name: /长按结束/ }).hover()
-  await page.mouse.down()
-  await page.waitForTimeout(2100)
-  await page.mouse.up()
-
-  // summary
-  await expect(page).toHaveURL(/\/summary\//)
-  await expect(page.getByText('已记录')).toBeVisible()
-  await expect(page.getByText('execution model')).toBeVisible()
-
-  // daily record
-  await page.getByRole('button', { name: '查看今天' }).click()
-  await expect(page).toHaveURL(/\/day$/)
-  await expect(page.getByText('execution model')).toBeVisible()
-  await expect(page.getByText('今日汇总')).toBeVisible()
-})
-
-test('language toggle switches every string between zh and en', async ({ page }) => {
+test('a running session survives a reload', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
+  await page.getByRole('button', { name: 'Start Today' }).click()
+  await startWorkSession(page)
 
-  await page.getByRole('button', { name: 'EN' }).click()
-  await expect(page.getByRole('heading', { name: 'What are you tracking?' })).toBeVisible()
-  await expect(page.getByRole('link', { name: /Track/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: /Today/ })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Pause session' })).toBeVisible()
+  await expect(page.getByRole('paragraph').filter({ hasText: 'Projects' })).toBeVisible()
 
-  await page.getByRole('button', { name: '中' }).click()
-  await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
+  await holdToEnd(page)
 })
 
-test('nav shell moves between Track and Today', async ({ page }) => {
+test('a new category can be added and used', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('link', { name: /今天/ }).click()
-  await expect(page).toHaveURL(/\/day$/)
-  await page.getByRole('link', { name: /记录/ }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await page.getByRole('button', { name: 'Add category' }).click()
+  await page.getByLabel('Category name').fill('Reading')
+  await page.getByRole('button', { name: 'Choose study icon' }).click()
+  await page.getByRole('button', { name: 'Create category' }).click()
+
+  // Recording before Start Today starts the day on its own
+  await page.getByRole('button', { name: /^Open Reading settings Reading/ }).click()
+  await expect(page.getByRole('heading', { name: 'How are you spending this reading time?' })).toBeVisible()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await holdToEnd(page)
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('since start')).toBeVisible()
 })
 
-test('home renders at key breakpoints', async ({ page }) => {
-  for (const width of [320, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 800 })
-    await page.goto('/')
-    await expect(page.getByRole('heading', { name: '你想记录什么？' })).toBeVisible()
-    await expect(page).toHaveScreenshot(`home-${width}.png`, {
-      fullPage: true,
-      animations: 'disabled',
-    })
-  }
+test('a day that was never ended closes itself after 4am', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-10T09:00:00') })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Same night: still the same day
+  await page.clock.setSystemTime(new Date('2026-11-11T01:00:00'))
+  await page.reload()
+  await expect(page.getByText('since start')).toBeVisible()
+
+  // Next morning: yesterday is closed and today has not started
+  await page.clock.setSystemTime(new Date('2026-11-11T09:00:00'))
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Start Today', exact: true })).toBeEnabled()
+  await expect(page.getByText('since start')).toHaveCount(0)
+})
+
+test('ending an overnight session by keyboard closes the stale day', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-10T23:00:00') })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  await startWorkSession(page)
+
+  // Next morning the session is still running, so the day stays open
+  await page.clock.setSystemTime(new Date('2026-11-11T09:00:00'))
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Pause session', exact: true })).toBeVisible()
+
+  // No pointer: Enter asks for confirmation instead of requiring a hold
+  await page.getByRole('button', { name: 'Hold to end session', exact: true }).press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'End session', exact: true })
+  await dialog.getByRole('button', { name: 'Not yet', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole('button', { name: 'Hold to end session', exact: true }).press('Enter')
+  await dialog.getByRole('button', { name: 'End session', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Start Today', exact: true })).toBeEnabled()
+})
+
+test('says so when the local database cannot be opened', async ({ page }) => {
+  await page.addInitScript(() => {
+    IDBFactory.prototype.open = () => { throw new DOMException('blocked', 'SecurityError') }
+  })
+  await page.goto('/')
+  await expect(page.getByText("TimeBox couldn't open its storage", { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reload', exact: true })).toBeVisible()
 })

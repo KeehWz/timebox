@@ -6,16 +6,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: 'list',
-  expect: {
-    // Visual-regression tolerance — absorbs sub-pixel font/AA differences across machines.
-    toHaveScreenshot: { maxDiffPixelRatio: 0.02 },
-  },
   use: {
     baseURL: 'http://localhost:4173',
-    locale: 'zh-CN', // app auto-detects locale from navigator.language → defaults to zh
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // A phone-sized touch viewport: the app is a single 430px column.
+  projects: [{ name: 'chromium', use: { ...devices['Pixel 7'], channel: process.env.PW_CHANNEL } }],
   webServer: {
     command: 'npm run build && npm run preview',
     url: 'http://localhost:4173',
