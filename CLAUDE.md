@@ -21,10 +21,18 @@ red failure states, or celebratory copy. Unrecorded time is never shown as bad.
 - `npm test` (vitest) · `npm run test:coverage`
 - `npm run test:e2e` (Playwright; set `PW_CHANNEL=chrome` to use an installed Chrome)
 - `npx wrangler dev` — the built app plus the API against a local D1 (run `npm run build` first)
-- `npm run deploy` — build and deploy to Cloudflare. Publishing: only when Zhen says so.
+- `npm run deploy` — build and deploy to Cloudflare by hand. Rarely needed: see Deployment.
 - `npm run metrics` — retention, usage and latest feedback from the production database
 
 All of these must pass before a PR.
+
+## Deployment
+
+- Production: https://timebox.michaelwz2180.workers.dev (Cloudflare Worker `timebox`, D1 database `timebox`).
+- **Merging to `main` deploys.** Cloudflare builds and deploys every push to `main` within a couple of
+  minutes. Treat a merge as a release: only merge when Zhen has said to ship it.
+- `npx wrangler deployments list --name timebox` shows what is live and when it went out.
+- After a deploy, check `GET /` is 200 and `GET /api/events` is 405 (the Worker is routing the API).
 
 ## Layout
 
