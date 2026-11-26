@@ -155,11 +155,11 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
 async function handleApi(request: Request, env: Env, pathname: string, now: number): Promise<Response> {
   // Keyed by client IP. The IP is only the limiter's short-lived key; it is never stored.
   const limiter = pathname === '/api/events' ? env.EVENTS_LIMITER : pathname === '/api/feedback' ? env.FEEDBACK_LIMITER : undefined
-  if (limiter) {
-    const { success } = await limiter.limit({ key: request.headers.get('cf-connecting-ip') ?? 'unknown' })
-    if (!success) return json({ error: 'too many requests' }, 429)
-  }
   try {
+    if (limiter) {
+      const { success } = await limiter.limit({ key: request.headers.get('cf-connecting-ip') ?? 'unknown' })
+      if (!success) return json({ error: 'too many requests' }, 429)
+    }
     if (pathname === '/api/events') return await saveEvents(request, env.DB, now)
     if (pathname === '/api/feedback') return await saveFeedback(request, env.DB, now)
   } catch (error) {

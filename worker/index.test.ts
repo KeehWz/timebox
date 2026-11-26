@@ -148,6 +148,16 @@ describe('rate limiting', () => {
     expect(env.EVENTS_LIMITER.limit).toHaveBeenCalledWith({ key: 'unknown' })
   })
 
+  it('answers 500 through the normal error path when the limiter itself fails', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    env.EVENTS_LIMITER = { limit: vi.fn(async () => { throw new Error('limiter unavailable') }) }
+    const response = await post('/api/events', { ...base, events: [{ name: 'app_open', ts: NOW }] })
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({ error: 'server error' })
+    expect(error).toHaveBeenCalledWith('[timebox] api failed', expect.any(Error))
+    error.mockRestore()
+  })
+
   it('never limits static assets', async () => {
     env.EVENTS_LIMITER = limiter(false)
     env.FEEDBACK_LIMITER = limiter(false)
