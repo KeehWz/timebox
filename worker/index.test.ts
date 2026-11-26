@@ -121,6 +121,50 @@ describe('POST /api/feedback', () => {
   })
 })
 
+describe('rate limiting', () => {
+  const limiter = (allow: boolean) => ({ limit: vi.fn(async () => ({ success: allow })) })
+
+  it('answers 429 over the limit without touching the database', async () => {
+    env.EVENTS_LIMITER = limiter(false)
+    const response = await handle(
+      new Request('https://timebox.test/api/events', {
+        method: 'POST',
+        headers: { 'cf-connecting-ip': '203.0.113.7' },
+        body: JSON.stringify({ ...base, events: [{ name: 'app_open', ts: NOW }] }),
+      }),
+      env,
+      NOW,
+    )
+    expect(response.status).toBe(429)
+    expect(env.EVENTS_LIMITER.limit).toHaveBeenCalledWith({ key: '203.0.113.7' })
+    expect(env.DB.batches).toBe(0)
+  })
+
+  it('uses a separate, stricter limiter for feedback', async () => {
+    env.EVENTS_LIMITER = limiter(true)
+    env.FEEDBACK_LIMITER = limiter(false)
+    expect((await post('/api/feedback', { ...base, message: 'Hi' })).status).toBe(429)
+    expect((await post('/api/events', { ...base, events: [{ name: 'app_open', ts: NOW }] })).status).toBe(200)
+    expect(env.EVENTS_LIMITER.limit).toHaveBeenCalledWith({ key: 'unknown' })
+  })
+
+  it('answers 500 through the normal error path when the limiter itself fails', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    env.EVENTS_LIMITER = { limit: vi.fn(async () => { throw new Error('limiter unavailable') }) }
+    const response = await post('/api/events', { ...base, events: [{ name: 'app_open', ts: NOW }] })
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({ error: 'server error' })
+    expect(error).toHaveBeenCalledWith('[timebox] api failed', expect.any(Error))
+    error.mockRestore()
+  })
+
+  it('never limits static assets', async () => {
+    env.EVENTS_LIMITER = limiter(false)
+    env.FEEDBACK_LIMITER = limiter(false)
+    expect((await handle(new Request('https://timebox.test/'), env, NOW)).status).toBe(200)
+  })
+})
+
 describe('routing and failures', () => {
   it('serves everything outside /api from static assets', async () => {
     const request = new Request('https://timebox.test/')

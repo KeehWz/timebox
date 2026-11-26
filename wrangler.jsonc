@@ -13,5 +13,11 @@
   },
   // No database_id: wrangler (>= 4.45) creates the database on the first deploy and keeps it
   // linked afterwards. The Worker creates its tables on first use.
-  "d1_databases": [{ "binding": "DB", "database_name": "timebox" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "timebox" }],
+  // Per-IP limits on the API. Approximate by design: counted per Cloudflare location. Generous
+  // enough for testers who share a campus or office IP. Period must be 10 or 60 seconds.
+  "ratelimits": [
+    { "name": "EVENTS_LIMITER", "namespace_id": "7301", "simple": { "limit": 120, "period": 60 } },
+    { "name": "FEEDBACK_LIMITER", "namespace_id": "7302", "simple": { "limit": 10, "period": 60 } }
+  ]
 }

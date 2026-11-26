@@ -88,6 +88,31 @@ test('a day: start, record, review, direction, end', async ({ page }) => {
   await expect(page.locator('.direction-compact-row.is-selected')).toHaveCount(0)
 })
 
+test('the back button returns to Record and closes Settings, instead of leaving the app', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  const onRecord = page.getByText(/^\d+(h \d+)?m since start$/)
+
+  await page.getByRole('button', { name: 'Stats', exact: true }).first().click()
+  await expect(page.getByRole('tablist', { name: 'Stats view', exact: true })).toBeVisible()
+  await page.evaluate(() => history.back())
+  await expect(onRecord).toBeVisible()
+
+  // Going back through the UI does not leave extra entries behind
+  await page.getByRole('button', { name: 'Direction', exact: true }).first().click()
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
+  await expect(onRecord).toBeVisible()
+  expect(await page.evaluate(() => history.state)).toBeNull()
+
+  // Back closes Settings and stays on the page underneath
+  await page.getByRole('button', { name: 'Stats', exact: true }).first().click()
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Send feedback', exact: true })).toBeVisible()
+  await page.evaluate(() => history.back())
+  await expect(page.getByRole('button', { name: 'Send feedback', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('tablist', { name: 'Stats view', exact: true })).toBeVisible()
+})
+
 test('a running session survives a reload', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: 'Start Today' }).click()

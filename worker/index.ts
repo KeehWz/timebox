@@ -9,9 +9,15 @@ export interface D1 {
   prepare(sql: string): D1Statement
   batch(statements: D1Statement[]): Promise<unknown>
 }
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>
+}
 export interface Env {
   DB: D1
   ASSETS: { fetch(request: Request): Promise<Response> }
+  // Cloudflare rate-limiting bindings (wrangler.jsonc). Optional so local tools run without them.
+  EVENTS_LIMITER?: RateLimiter
+  FEEDBACK_LIMITER?: RateLimiter
 }
 
 export const SCHEMA = [
@@ -119,7 +125,13 @@ async function saveFeedback(request: Request, db: D1, now: number) {
 /** Request handler, separate from the default export so tests can call it with a fake `Env`. */
 export async function handle(request: Request, env: Env, now = Date.now()): Promise<Response> {
   const { pathname } = new URL(request.url)
+  // Keyed by client IP. The IP is only the limiter's short-lived key; it is never stored.
+  const limiter = pathname === '/api/events' ? env.EVENTS_LIMITER : pathname === '/api/feedback' ? env.FEEDBACK_LIMITER : undefined
   try {
+    if (limiter) {
+      const { success } = await limiter.limit({ key: request.headers.get('cf-connecting-ip') ?? 'unknown' })
+      if (!success) return json({ error: 'too many requests' }, 429)
+    }
     if (pathname === '/api/events') return await saveEvents(request, env.DB, now)
     if (pathname === '/api/feedback') return await saveFeedback(request, env.DB, now)
   } catch (error) {
