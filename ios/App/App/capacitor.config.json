@@ -1,0 +1,13 @@
+{
+	"appId": "io.github.keehwz.timebox",
+	"appName": "TimeBox",
+	"webDir": "dist",
+	"backgroundColor": "#F2F6FF",
+	"ios": {
+		"contentInset": "never",
+		"backgroundColor": "#F2F6FF"
+	},
+	"packageClassList": [
+		"LocalNotificationsPlugin"
+	]
+}
