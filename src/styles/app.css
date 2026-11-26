@@ -1349,6 +1349,7 @@ button, input, textarea {
   align-items: flex-end;
   justify-content: center;
   padding: 18px;
+  padding-top: max(18px, env(safe-area-inset-top));
   background: rgba(17, 24, 39, 0.18);
   backdrop-filter: blur(8px);
 }
@@ -1547,7 +1548,8 @@ button, input, textarea {
 }
 .settings-trigger {
   position: absolute;
-  top: 17px;
+  /* Below the status bar in the iOS app; browsers report a zero inset. */
+  top: calc(17px + env(safe-area-inset-top));
   right: 18px;
   z-index: 30;
   display: grid;

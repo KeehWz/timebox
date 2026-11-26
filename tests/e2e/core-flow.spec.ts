@@ -278,3 +278,23 @@ test('declining the privacy note turns sharing off and sends nothing', async ({ 
   await page.waitForTimeout(500)
   expect(requests).toBe(0)
 })
+
+test('nothing sits under the status bar on a phone with a notch (iOS app)', async ({ page }) => {
+  // Browsers report a zero top inset; the iOS app does not. Chrome can emulate it.
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 59, bottom: 34 } })
+  const STATUS_BAR = 59
+  const top = async (locator: ReturnType<Page['getByRole']>) => (await locator.boundingBox())?.y ?? -1
+
+  await openApp(page)
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+  expect(await top(page.getByRole('button', { name: 'Open settings', exact: true }))).toBeGreaterThanOrEqual(STATUS_BAR)
+  expect(await top(page.getByRole('button', { name: 'Stats', exact: true }).first())).toBeGreaterThanOrEqual(STATUS_BAR)
+
+  await page.getByRole('button', { name: 'Stats', exact: true }).first().click()
+  expect(await top(page.getByRole('tablist', { name: 'Stats view', exact: true }))).toBeGreaterThanOrEqual(STATUS_BAR)
+
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click()
+  await page.getByRole('button', { name: 'Send feedback', exact: true }).click()
+  expect(await top(page.getByRole('button', { name: '← Settings', exact: true }))).toBeGreaterThanOrEqual(STATUS_BAR)
+})
