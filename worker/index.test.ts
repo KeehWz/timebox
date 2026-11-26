@@ -155,6 +155,43 @@ describe('rate limiting', () => {
   })
 })
 
+describe('CORS for the iOS app', () => {
+  const NATIVE = 'capacitor://localhost'
+  const request = (method: string, origin: string, path = '/api/events') =>
+    new Request(`https://timebox.test${path}`, {
+      method,
+      headers: { origin, 'content-type': 'application/json' },
+      ...(method === 'POST' ? { body: JSON.stringify({ ...base, events: [{ name: 'app_open', ts: NOW }] }) } : {}),
+    })
+
+  it('answers the preflight from the app, without counting it against the rate limit', async () => {
+    env.EVENTS_LIMITER = { limit: vi.fn(async () => ({ success: false })) }
+    const response = await handle(request('OPTIONS', NATIVE), env, NOW)
+    expect(response.status).toBe(204)
+    expect(response.headers.get('access-control-allow-origin')).toBe(NATIVE)
+    expect(response.headers.get('access-control-allow-methods')).toBe('POST')
+    expect(response.headers.get('access-control-allow-headers')).toBe('content-type')
+    expect(env.EVENTS_LIMITER.limit).not.toHaveBeenCalled()
+  })
+
+  it('lets the app read API responses, including errors', async () => {
+    const ok = await handle(request('POST', NATIVE), env, NOW)
+    expect(ok.status).toBe(200)
+    expect(ok.headers.get('access-control-allow-origin')).toBe(NATIVE)
+    const missing = await handle(request('POST', NATIVE, '/api/nope'), env, NOW)
+    expect(missing.status).toBe(404)
+    expect(missing.headers.get('access-control-allow-origin')).toBe(NATIVE)
+  })
+
+  it('grants nothing to other origins', async () => {
+    const preflightResponse = await handle(request('OPTIONS', 'https://evil.example'), env, NOW)
+    expect(preflightResponse.headers.get('access-control-allow-origin')).toBeNull()
+    expect(preflightResponse.headers.get('access-control-allow-methods')).toBeNull()
+    const post = await handle(request('POST', 'https://evil.example'), env, NOW)
+    expect(post.headers.get('access-control-allow-origin')).toBeNull()
+  })
+})
+
 describe('routing and failures', () => {
   it('serves everything outside /api from static assets', async () => {
     const request = new Request('https://timebox.test/')

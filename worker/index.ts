@@ -66,6 +66,28 @@ function ensureSchema(db: D1) {
   return pending
 }
 
+// The iOS app (Capacitor) loads from this origin and calls the API cross-origin.
+const NATIVE_ORIGINS = new Set(['capacitor://localhost'])
+
+function withCors(request: Request, response: Response): Response {
+  const origin = request.headers.get('origin')
+  if (origin && NATIVE_ORIGINS.has(origin)) {
+    response.headers.set('access-control-allow-origin', origin)
+    response.headers.set('vary', 'origin')
+  }
+  return response
+}
+
+function preflight(request: Request): Response {
+  const response = new Response(null, { status: 204 })
+  if (NATIVE_ORIGINS.has(request.headers.get('origin') ?? '')) {
+    response.headers.set('access-control-allow-methods', 'POST')
+    response.headers.set('access-control-allow-headers', 'content-type')
+    response.headers.set('access-control-max-age', '86400')
+  }
+  return withCors(request, response)
+}
+
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
@@ -125,6 +147,12 @@ async function saveFeedback(request: Request, db: D1, now: number) {
 /** Request handler, separate from the default export so tests can call it with a fake `Env`. */
 export async function handle(request: Request, env: Env, now = Date.now()): Promise<Response> {
   const { pathname } = new URL(request.url)
+  if (!pathname.startsWith('/api/')) return env.ASSETS.fetch(request)
+  if (request.method === 'OPTIONS') return preflight(request)
+  return withCors(request, await handleApi(request, env, pathname, now))
+}
+
+async function handleApi(request: Request, env: Env, pathname: string, now: number): Promise<Response> {
   // Keyed by client IP. The IP is only the limiter's short-lived key; it is never stored.
   const limiter = pathname === '/api/events' ? env.EVENTS_LIMITER : pathname === '/api/feedback' ? env.FEEDBACK_LIMITER : undefined
   if (limiter) {
@@ -138,8 +166,7 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
     console.error('[timebox] api failed', error)
     return json({ error: 'server error' }, 500)
   }
-  if (pathname.startsWith('/api/')) return json({ error: 'not found' }, 404)
-  return env.ASSETS.fetch(request)
+  return json({ error: 'not found' }, 404)
 }
 
 export default {
