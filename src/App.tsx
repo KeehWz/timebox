@@ -243,6 +243,8 @@ export default function App() {
               <StatsScreen
                 sessions={state.sessions}
                 sessionTypes={state.sessionTypes}
+                days={state.day.started ? [...state.days, state.day] : state.days}
+                currentDayStart={state.day.started ? state.day.startTime : null}
                 onRecord={() => navigate('record')}
                 onEditSession={(sessionId, description) => run(store.updateSessionDescription(sessionId, description))}
               />

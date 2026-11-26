@@ -93,6 +93,24 @@ export function isStaleDay(day: DayState, now: number): boolean {
   return rolloverDateKey(day.startTime) !== rolloverDateKey(now)
 }
 
+/** A recorded day's bounds. `endTime` is 0 while the day is still open. */
+export interface DayBounds {
+  startTime: number
+  endTime: number
+}
+
+/**
+ * The local date a session counts toward. Everything between Start Today and End Today belongs to
+ * the date Start Today was pressed, even past midnight. A session outside every recorded day (for
+ * example one migrated from V1) counts toward the date it started.
+ */
+export function sessionDayKey(session: Session, days: DayBounds[]): string {
+  const day = days.find(
+    item => session.startTime >= item.startTime && (item.endTime === 0 || session.startTime <= item.endTime),
+  )
+  return localDateKey(new Date(day ? day.startTime : session.startTime))
+}
+
 // ── Direction amounts ───────────────────────────────────────────────────────
 
 export function roughAmountMinutes(amount: string): number {

@@ -67,6 +67,9 @@ All of these must pass before a PR.
 - Starting a session before Start Today starts the day at that moment.
 - A day that was never ended is closed quietly on the next open after 4am, ending at its last recording.
 - Today's Direction is cleared when the day closes. Closed days are archived in the `days` table.
+- A session belongs to the day it was recorded in: everything between Start Today and End Today counts
+  toward Start Today's date, even past midnight (`sessionDayKey` in `src/domain/time.ts`). Stats groups by
+  this, never by calendar date, and its "today" is the open day's date.
 - `sessions` holds finished recordings only; `typeName` is copied in so history survives renames/deletes.
 - Ending a session takes a 900ms hold. A click with no pointer behind it (keyboard, switch control)
   cannot hold, so it opens a confirm dialog instead.

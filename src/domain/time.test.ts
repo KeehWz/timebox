@@ -8,6 +8,7 @@ import {
   pauseActive,
   resumeActive,
   roughAmountMinutes,
+  sessionDayKey,
   sessionDuration,
   startOfCalendarWeek,
   sumSessionMs,
@@ -163,5 +164,34 @@ describe('direction amounts', () => {
     ).toBe('1h 45m')
     expect(summarizeDirectionItems([{ preset: null, roughAmount: '30m' }, { preset: 'Run', roughAmount: '90m' }])).toBe('2h')
     expect(summarizeDirectionItems([{ preset: null, roughAmount: '45m' }])).toBe('45m')
+  })
+})
+
+describe('sessionDayKey', () => {
+  const day10 = { startTime: at(9), endTime: at(1, 30, 11) } // Start Today 10th 09:00, End Today 11th 01:30
+
+  it('keeps everything before End Today on the day Start Today was pressed, even after midnight', () => {
+    expect(sessionDayKey(session({ startTime: at(23, 30), endTime: at(0, 20, 11) }), [day10])).toBe('2026-11-10')
+    expect(sessionDayKey(session({ startTime: at(1, 0, 11), endTime: at(1, 20, 11) }), [day10])).toBe('2026-11-10')
+  })
+
+  it('does the same for the day that is still open', () => {
+    const open = { startTime: at(9), endTime: 0 }
+    expect(sessionDayKey(session({ startTime: at(2, 0, 11), endTime: at(3, 0, 11) }), [open])).toBe('2026-11-10')
+  })
+
+  it('puts a session after End Today on the next day', () => {
+    const next = { startTime: at(8, 0, 11), endTime: 0 }
+    expect(sessionDayKey(session({ startTime: at(9, 0, 11), endTime: at(10, 0, 11) }), [day10, next])).toBe('2026-11-11')
+  })
+
+  it('uses the date a day was started on, even if that was after midnight', () => {
+    const lateStart = { startTime: at(0, 30, 11), endTime: 0 }
+    expect(sessionDayKey(session({ startTime: at(0, 40, 11), endTime: at(1, 0, 11) }), [lateStart])).toBe('2026-11-11')
+  })
+
+  it('falls back to the calendar date outside every recorded day', () => {
+    expect(sessionDayKey(session({ startTime: at(7, 0, 9), endTime: at(8, 0, 9) }), [day10])).toBe('2026-11-09')
+    expect(sessionDayKey(session({ startTime: at(3, 0, 11), endTime: at(4, 0, 11) }), [])).toBe('2026-11-11')
   })
 })
