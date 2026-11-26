@@ -28,6 +28,18 @@ function isBuiltin(typeId: string) {
   return DEFAULT_TYPES.some(type => type.id === typeId)
 }
 
+// Each screen away from Record, and the Settings sheet, holds one browser history entry, so the
+// system back button (Android, desktop browsers) returns to Record instead of leaving the app.
+type HistoryMark = 'view' | 'settings'
+function historyMark(): HistoryMark | undefined {
+  return (window.history.state as { timebox?: HistoryMark } | null)?.timebox
+}
+
+/** Close a day left open past the 4am rollover, and count it as a day that ended on its own. */
+async function closeStaleDay() {
+  if (await store.closeStaleDay(Date.now())) record('day_end', { auto: true })
+}
+
 /** Fire a store write; the live query re-renders the UI when it lands. */
 function run(write: Promise<unknown>) {
   write.catch(error => console.error('[timebox] store write failed', error))
@@ -44,10 +56,20 @@ export default function App() {
 
   useEffect(() => record('app_open'), [])
 
+  // Back closes Settings; leaving a screen's history entry returns to Record.
+  useEffect(() => {
+    const onPop = (event: PopStateEvent) => {
+      setShowSettings(false)
+      if ((event.state as { timebox?: HistoryMark } | null)?.timebox !== 'view') setView('record')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   // A day that was never ended is closed quietly when the app is next opened after 4am.
   useEffect(() => {
     const check = () => {
-      if (document.visibilityState === 'visible') run(store.closeStaleDay(Date.now()))
+      if (document.visibilityState === 'visible') run(closeStaleDay())
     }
     check()
     document.addEventListener('visibilitychange', check)
@@ -57,9 +79,29 @@ export default function App() {
   // A running session and an unfinished reflection survive reloads, so they win over `view`.
   const screen: Screen = state?.active ? 'active' : state?.day.endTime ? 'end-day-reflection' : view
 
+  const navigate = (next: View) => {
+    if (next === 'record') {
+      if (historyMark() === 'view') window.history.back() // popstate sets the view
+      else setView('record')
+      return
+    }
+    if (!historyMark()) window.history.pushState({ timebox: 'view' }, '')
+    setView(next)
+  }
+
+  const openSettings = () => {
+    window.history.pushState({ timebox: 'settings' }, '')
+    setShowSettings(true)
+  }
+
+  const closeSettings = () => {
+    if (historyMark() === 'settings') window.history.back() // popstate closes the sheet
+    else setShowSettings(false)
+  }
+
   const handleSessionEnd = async () => {
     setLastSession(null)
-    setView('session-end')
+    navigate('session-end')
     const finished = await store.endSession(Date.now())
     if (finished) {
       setLastSession(finished)
@@ -68,9 +110,9 @@ export default function App() {
         builtin: isBuiltin(finished.typeId),
         focus: finished.focusedDuration !== undefined,
       })
-    } else setView('record')
+    } else navigate('record')
     // The stale-day check is skipped while a session runs, so repeat it once the session is over.
-    await store.closeStaleDay(Date.now())
+    await closeStaleDay()
   }
 
   // Events queued since launch are sent once the note is accepted, or discarded if it is declined.
@@ -79,7 +121,7 @@ export default function App() {
   }
 
   const openStats = () => {
-    setView('stats')
+    navigate('stats')
     record('stats_view')
   }
 
@@ -96,11 +138,11 @@ export default function App() {
     const deltaY = event.clientY - start.y
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return
     if (deltaX < 0) {
-      if (screen === 'direction') setView('record')
+      if (screen === 'direction') navigate('record')
       else if (screen === 'record') openStats()
     } else {
-      if (screen === 'stats') setView('record')
-      else if (screen === 'record') setView('direction')
+      if (screen === 'stats') navigate('record')
+      else if (screen === 'record') navigate('direction')
     }
   }
 
@@ -112,7 +154,7 @@ export default function App() {
         boxShadow: '0 0 0 1px rgba(0,0,0,0.04), 0 20px 80px rgba(0,0,0,0.10)',
       }}>
         {state && state.day.started && PAGES.includes(screen) && (
-          <button className="settings-trigger" onClick={() => setShowSettings(true)} aria-label="Open settings">
+          <button className="settings-trigger" onClick={openSettings} aria-label="Open settings">
             <svg width={17} height={17} viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
               <path d="M19 13.2v-2.4l-2-.6a7 7 0 0 0-.7-1.6l1-1.9-1.7-1.7-1.9 1a7 7 0 0 0-1.6-.7L11.5 3H9.1l-.6 2.1a7 7 0 0 0-1.6.7L5 4.8 3.3 6.5l1 1.9a7 7 0 0 0-.7 1.6l-2 .6V13l2 .6a7 7 0 0 0 .7 1.6l-1 1.9L5 18.8l1.9-1a7 7 0 0 0 1.6.7l.6 2.1h2.4l.6-2.1a7 7 0 0 0 1.6-.7l1.9 1 1.7-1.7-1-1.9a7 7 0 0 0 .7-1.6l2-.4Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
@@ -135,10 +177,10 @@ export default function App() {
                 sessions={state.sessions} dayStartTime={state.day.startTime}
                 dayStarted={state.day.started}
                 onStartToday={() => { run(store.startDay(Date.now())); record('day_start') }}
-                onSetDirection={() => { run(store.startDay(Date.now())); record('day_start'); setView('direction') }}
-                onDirection={() => setView('direction')}
+                onSetDirection={() => { run(store.startDay(Date.now())); record('day_start'); navigate('direction') }}
+                onDirection={() => navigate('direction')}
                 onStats={openStats}
-                onSessionDrop={typeId => { setSelectedTypeId(typeId); setView('session-setup') }}
+                onSessionDrop={typeId => { setSelectedTypeId(typeId); navigate('session-setup') }}
                 onEndToday={() => { run(store.markDayEnd(Date.now())); record('day_end') }}
                 onUpdateType={(typeId, updates) => run(store.updateType(typeId, updates))}
                 onDeleteType={typeId => run(store.deleteType(typeId))}
@@ -152,6 +194,7 @@ export default function App() {
                 directions={state.directions}
                 onStart={(description, focusEnabled, reminder) => {
                   run(store.startSession({ typeId: selectedTypeId, description, focusEnabled, reminder }, Date.now()))
+                  if (!state.day.started) record('day_start', { auto: true }) // the session starts the day
                   record('session_start', {
                     builtin: isBuiltin(selectedTypeId),
                     focus: focusEnabled,
@@ -159,7 +202,7 @@ export default function App() {
                     described: description.trim() !== '',
                   })
                 }}
-                onBack={() => setView('record')}
+                onBack={() => navigate('record')}
                 onAddPreset={(typeId, preset) => run(store.addPreset(typeId, preset))}
               />
             )}
@@ -174,7 +217,7 @@ export default function App() {
             {screen === 'session-end' && lastSession && (
               <SessionEndScreen session={lastSession} onContinue={description => {
                 run(store.updateSessionDescription(lastSession.id, description))
-                setView('record')
+                navigate('record')
               }} />
             )}
             {screen === 'direction' && (
@@ -182,14 +225,14 @@ export default function App() {
                 sessionTypes={state.sessionTypes}
                 directions={state.directions}
                 onUpdate={directions => { run(store.setDirections(directions)); record('direction_set', { count: directions.length }) }}
-                onRecord={() => setView('record')}
+                onRecord={() => navigate('record')}
               />
             )}
             {screen === 'stats' && (
               <StatsScreen
                 sessions={state.sessions}
                 sessionTypes={state.sessionTypes}
-                onRecord={() => setView('record')}
+                onRecord={() => navigate('record')}
                 onEditSession={(sessionId, description) => run(store.updateSessionDescription(sessionId, description))}
               />
             )}
@@ -201,7 +244,7 @@ export default function App() {
                 onDone={reflection => {
                   run(store.closeDay(reflection, Date.now()))
                   record('reflection_done', { wrote: reflection.trim() !== '' })
-                  setView('record')
+                  navigate('record')
                 }}
               />
             )}
@@ -218,7 +261,7 @@ export default function App() {
             settings={state.settings}
             onChange={updates => run(store.updateSettings(updates))}
             onSendFeedback={sendFeedback}
-            onClose={() => setShowSettings(false)}
+            onClose={closeSettings}
           />
         )}
       </div>

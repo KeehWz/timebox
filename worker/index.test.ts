@@ -121,6 +121,40 @@ describe('POST /api/feedback', () => {
   })
 })
 
+describe('rate limiting', () => {
+  const limiter = (allow: boolean) => ({ limit: vi.fn(async () => ({ success: allow })) })
+
+  it('answers 429 over the limit without touching the database', async () => {
+    env.EVENTS_LIMITER = limiter(false)
+    const response = await handle(
+      new Request('https://timebox.test/api/events', {
+        method: 'POST',
+        headers: { 'cf-connecting-ip': '203.0.113.7' },
+        body: JSON.stringify({ ...base, events: [{ name: 'app_open', ts: NOW }] }),
+      }),
+      env,
+      NOW,
+    )
+    expect(response.status).toBe(429)
+    expect(env.EVENTS_LIMITER.limit).toHaveBeenCalledWith({ key: '203.0.113.7' })
+    expect(env.DB.batches).toBe(0)
+  })
+
+  it('uses a separate, stricter limiter for feedback', async () => {
+    env.EVENTS_LIMITER = limiter(true)
+    env.FEEDBACK_LIMITER = limiter(false)
+    expect((await post('/api/feedback', { ...base, message: 'Hi' })).status).toBe(429)
+    expect((await post('/api/events', { ...base, events: [{ name: 'app_open', ts: NOW }] })).status).toBe(200)
+    expect(env.EVENTS_LIMITER.limit).toHaveBeenCalledWith({ key: 'unknown' })
+  })
+
+  it('never limits static assets', async () => {
+    env.EVENTS_LIMITER = limiter(false)
+    env.FEEDBACK_LIMITER = limiter(false)
+    expect((await handle(new Request('https://timebox.test/'), env, NOW)).status).toBe(200)
+  })
+})
+
 describe('routing and failures', () => {
   it('serves everything outside /api from static assets', async () => {
     const request = new Request('https://timebox.test/')

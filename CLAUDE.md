@@ -57,6 +57,8 @@ All of these must pass before a PR.
   cannot hold, so it opens a confirm dialog instead.
 - If the local database cannot be opened, `StorageUnavailable` is shown. The live query never
   resolves in that case and does not throw, so an error boundary would not catch it.
+- Every screen away from Record, and the Settings sheet, holds one browser history entry, so the system
+  back button returns to Record or closes Settings. Navigate with `navigate()` in `App.tsx`, not `setView`.
 - No `Date.now()` / `new Date()` during render — use `useNow()` (the React Compiler lint rule enforces this).
 
 ## Usage events and feedback
@@ -69,6 +71,9 @@ All of these must pass before a PR.
 - Events wait in a local outbox and are sent when online. "Share anonymous usage" in Settings turns
   them off and discards the outbox. Feedback is always sent — the user chose to write it.
 - Identity is a random install id. No account, no IP address stored.
+- The API is rate-limited per IP (`ratelimits` in `wrangler.jsonc`). The IP is only the limiter's
+  short-lived key. The client keeps a batch that gets 429 and retries it later.
+- `day_start` / `day_end` carry `auto: true` when a session started the day or a stale day closed itself.
 - The Worker creates its tables on first use; there is no migration step.
 
 ## Not wired yet
