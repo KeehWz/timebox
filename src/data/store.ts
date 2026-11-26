@@ -1,7 +1,7 @@
 import { db } from './db'
 import { DEFAULT_DAY, DEFAULT_SETTINGS, DEFAULT_TYPES, MAX_SESSION_TYPES, presetsFor } from '../domain/defaults'
 import { finishActive, isStaleDay, pauseActive, resumeActive } from '../domain/time'
-import type { ActiveSession, DayState, Direction, Session, SessionType, Settings } from '../domain/types'
+import type { ActiveSession, DayRecord, DayState, Direction, Session, SessionType, Settings } from '../domain/types'
 import { newId } from '../lib/id'
 
 export interface AppState {
@@ -9,6 +9,7 @@ export interface AppState {
   sessions: Session[]
   directions: Direction[]
   day: DayState
+  days: DayRecord[] // closed days, oldest first
   active: ActiveSession | null
   settings: Settings
 }
@@ -29,11 +30,12 @@ export async function getSettings(): Promise<Settings> {
 
 /** Everything the UI renders from, read in one snapshot. */
 export function loadState(): Promise<AppState> {
-  return db.transaction('r', db.sessions, db.kv, async () => ({
+  return db.transaction('r', db.sessions, db.kv, db.days, async () => ({
     sessionTypes: await getKv('sessionTypes', DEFAULT_TYPES),
     sessions: await db.sessions.orderBy('startTime').toArray(),
     directions: await getKv<Direction[]>('directions', []),
     day: await getKv('day', DEFAULT_DAY),
+    days: await db.days.toArray(),
     active: await getKv<ActiveSession | null>('active', null),
     settings: await getSettings(),
   }))

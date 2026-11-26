@@ -2,21 +2,25 @@ import { useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { colorWithAlpha, formatClock, formatRecordedTotal } from '../domain/format'
 import { buildCategoryBreakdown, categoryColor, type StatsCategory } from '../domain/stats'
-import { addCalendarDays, localDateKey, sessionDuration, startOfCalendarWeek, startOfDate } from '../domain/time'
+import { addCalendarDays, localDateKey, sessionDayKey, sessionDuration, startOfCalendarWeek, startOfDate, type DayBounds } from '../domain/time'
 import type { Session, SessionType } from '../domain/types'
 import { useNow } from '../hooks/useNow'
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }: {
+export function StatsScreen({ sessions, sessionTypes, days, currentDayStart, onRecord, onEditSession }: {
   sessions: Session[]
   sessionTypes: SessionType[]
+  days: DayBounds[] // closed days plus the open one: a session belongs to the day it was recorded in
+  currentDayStart: number | null // Start Today of the open day; until End Today, that date is "today"
   onRecord: () => void
   onEditSession: (sessionId: string, description: string) => void
 }) {
   const [mode, setMode] = useState<'daily' | 'weekly'>('daily')
-  const [selectedDate, setSelectedDate] = useState(() => startOfDate(new Date()))
-  const [selectedWeek, setSelectedWeek] = useState(() => startOfCalendarWeek(new Date()))
+  // "Today" is the open day's date, so after midnight it is still the day Start Today was pressed.
+  const appToday = (ts: number) => startOfDate(new Date(currentDayStart ?? ts))
+  const [selectedDate, setSelectedDate] = useState(() => appToday(Date.now()))
+  const [selectedWeek, setSelectedWeek] = useState(() => startOfCalendarWeek(appToday(Date.now())))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
@@ -27,18 +31,18 @@ export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }:
   const rangeSwipeStart = useRef<{ x: number; y: number } | null>(null)
   const now = useNow(60_000) // only used to tell whether the selected range is the current one
 
-  const dayStart = selectedDate.getTime()
-  const dayEnd = addCalendarDays(selectedDate, 1).getTime()
+  const dayKeyById = new Map(sessions.map(session => [session.id, sessionDayKey(session, days)]))
+  const onDay = (session: Session, date: Date) => dayKeyById.get(session.id) === localDateKey(date)
+
   const dailySessions = sessions
-    .filter(session => session.startTime >= dayStart && session.startTime < dayEnd)
+    .filter(session => onDay(session, selectedDate))
     .sort((a, b) => a.startTime - b.startTime)
   const dailyCategories = buildCategoryBreakdown(dailySessions)
   const dailyTotal = dailyCategories.reduce((total, category) => total + category.duration, 0)
 
-  const weekStart = selectedWeek.getTime()
-  const weekEnd = addCalendarDays(selectedWeek, 7).getTime()
+  const weekDates = WEEK_DAYS.map((_, dayIndex) => addCalendarDays(selectedWeek, dayIndex))
   const weeklySessions = sessions
-    .filter(session => session.startTime >= weekStart && session.startTime < weekEnd)
+    .filter(session => weekDates.some(date => onDay(session, date)))
     .sort((a, b) => a.startTime - b.startTime)
   const recordedWeeklyCategories = buildCategoryBreakdown(weeklySessions)
   const currentCategoryIds = new Set(sessionTypes.map(type => type.id))
@@ -53,8 +57,8 @@ export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }:
   ]
   const weeklyTotal = weeklyCategories.reduce((total, category) => total + category.duration, 0)
   const selectedSession = dailySessions.find(session => session.id === selectedSessionId) || null
-  const isToday = localDateKey(selectedDate) === localDateKey(new Date(now))
-  const isCurrentWeek = localDateKey(selectedWeek) === localDateKey(startOfCalendarWeek(new Date(now)))
+  const isToday = localDateKey(selectedDate) === localDateKey(appToday(now))
+  const isCurrentWeek = localDateKey(selectedWeek) === localDateKey(startOfCalendarWeek(appToday(now)))
 
   const moveRange = (amount: number) => {
     setExpandedCategory(null)
@@ -284,7 +288,7 @@ export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }:
         {((mode === 'daily' && !isToday) || (mode === 'weekly' && !isCurrentWeek)) && (
           <button
             className="stats-current-shortcut"
-            onClick={() => mode === 'daily' ? setSelectedDate(startOfDate(new Date())) : setSelectedWeek(startOfCalendarWeek(new Date()))}
+            onClick={() => mode === 'daily' ? setSelectedDate(appToday(Date.now())) : setSelectedWeek(startOfCalendarWeek(appToday(Date.now())))}
           >
             {mode === 'daily' ? 'Today' : 'This week'}
           </button>
@@ -353,9 +357,7 @@ export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }:
                 return [
                   <span className="stats-matrix-name" key={`${category.typeId}-name`}>{category.name}</span>,
                   ...WEEK_DAYS.map((_, dayIndex) => {
-                    const start = addCalendarDays(selectedWeek, dayIndex).getTime()
-                    const end = addCalendarDays(selectedWeek, dayIndex + 1).getTime()
-                    const daySessions = weeklySessions.filter(session => session.startTime >= start && session.startTime < end)
+                    const daySessions = weeklySessions.filter(session => onDay(session, weekDates[dayIndex]))
                     const dayTotal = daySessions.reduce((total, session) => total + sessionDuration(session), 0)
                     const duration = daySessions
                       .filter(session => session.typeId === category.typeId)
@@ -381,9 +383,7 @@ export function StatsScreen({ sessions, sessionTypes, onRecord, onEditSession }:
             {matrixDetail && (() => {
               const category = weeklyCategories.find(item => item.typeId === matrixDetail.typeId)
               if (!category) return null
-              const start = addCalendarDays(selectedWeek, matrixDetail.dayIndex).getTime()
-              const end = addCalendarDays(selectedWeek, matrixDetail.dayIndex + 1).getTime()
-              const daySessions = weeklySessions.filter(session => session.startTime >= start && session.startTime < end)
+              const daySessions = weeklySessions.filter(session => onDay(session, weekDates[matrixDetail.dayIndex]))
               const dayTotal = daySessions.reduce((total, session) => total + sessionDuration(session), 0)
               const duration = daySessions.filter(session => session.typeId === category.typeId).reduce((total, session) => total + sessionDuration(session), 0)
               return (

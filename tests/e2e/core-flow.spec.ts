@@ -298,3 +298,44 @@ test('nothing sits under the status bar on a phone with a notch (iOS app)', asyn
   await page.getByRole('button', { name: 'Send feedback', exact: true }).click()
   expect(await top(page.getByRole('button', { name: '← Settings', exact: true }))).toBeGreaterThanOrEqual(STATUS_BAR)
 })
+
+test('a late night stays on the day it started until End Today', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-10T22:30:00') })
+  await openApp(page)
+  await page.getByRole('button', { name: 'Start Today', exact: true }).click()
+
+  // 23:00–00:30 across midnight, then 01:00–01:30 on the 11th, all before End Today
+  const record = async (minutes: number) => {
+    await startWorkSession(page)
+    await page.clock.fastForward(minutes * 60_000)
+    await holdToEnd(page)
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  }
+  await page.clock.fastForward(30 * 60_000)
+  await record(90)
+  await page.clock.fastForward(30 * 60_000)
+  await record(30)
+
+  // Stats opens on the day that is still open, not on the calendar date
+  await page.getByRole('button', { name: 'Stats', exact: true }).first().click()
+  await expect(page.getByText('Tuesday, November 10', { exact: true })).toBeVisible()
+  await expect(page.getByText('2h recorded', { exact: true })).toBeVisible()
+
+  // The week puts all of it on Tuesday
+  await page.getByRole('tab', { name: 'Weekly', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Tue, Work: 2h', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Wed, no Work recorded', exact: true })).toBeVisible()
+
+  // After End Today, the 10th still holds both sessions and the 11th is empty
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
+  await page.getByRole('button', { name: 'End Today', exact: true }).first().click()
+  await page.locator('.end-confirm').getByRole('button', { name: 'End Today', exact: true }).click()
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.getByRole('button', { name: 'Stats', exact: true }).first().click()
+  await expect(page.getByText('Wednesday, November 11', { exact: true })).toBeVisible()
+  await expect(page.getByText('0m recorded', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Previous day', exact: true }).click()
+  await expect(page.getByText('Tuesday, November 10', { exact: true })).toBeVisible()
+  await expect(page.getByText('2h recorded', { exact: true })).toBeVisible()
+})
