@@ -26,3 +26,18 @@ await sharp(rounded).resize(192, 192).png().toFile(join(pub, 'pwa-192.png'))
 await sharp(rounded).resize(512, 512).png().toFile(join(pub, 'pwa-512.png'))
 await sharp(maskable).resize(512, 512).png().toFile(join(pub, 'pwa-maskable-512.png'))
 console.log('✓ PWA icons generated (pwa-192, pwa-512, pwa-maskable-512)')
+
+// iOS app (Capacitor). iOS rounds the corners itself and App Store icons may not have an alpha
+// channel, so use the full-bleed variant and flatten it. The launch screen is the app's plain
+// background colour, so the app opens without a logo flash.
+const assets = join(pub, '..', 'ios', 'App', 'App', 'Assets.xcassets')
+await sharp(maskable)
+  .resize(1024, 1024)
+  .flatten({ background: '#5b7cfa' })
+  .png()
+  .toFile(join(assets, 'AppIcon.appiconset', 'AppIcon-512@2x.png'))
+const splash = sharp({ create: { width: 2732, height: 2732, channels: 3, background: '#F2F6FF' } }).png()
+for (const name of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
+  await splash.clone().toFile(join(assets, 'Splash.imageset', name))
+}
+console.log('✓ iOS icon and launch screen generated')

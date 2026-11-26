@@ -1,7 +1,8 @@
 # TimeBox
 
 A personal time-awareness app: mark stretches of the day, see where time went. Local-first PWA,
-served from Cloudflare Workers with a small API for usage events and feedback.
+served from Cloudflare Workers with a small API for usage events and feedback, plus an iOS app
+that wraps the same build with Capacitor.
 
 ## Source of truth
 
@@ -23,6 +24,7 @@ red failure states, or celebratory copy. Unrecorded time is never shown as bad.
 - `npx wrangler dev` — the built app plus the API against a local D1 (run `npm run build` first)
 - `npm run deploy` — build and deploy to Cloudflare by hand. Rarely needed: see Deployment.
 - `npm run metrics` — retention, usage and latest feedback from the production database
+- `npm run ios` — build, copy into the iOS project and open Xcode (macOS). `npm run ios:sync` without opening.
 
 All of these must pass before a PR.
 
@@ -33,6 +35,19 @@ All of these must pass before a PR.
   minutes. Treat a merge as a release: only merge when Zhen has said to ship it.
 - `npx wrangler deployments list --name timebox` shows what is live and when it went out.
 - After a deploy, check `GET /` is 200 and `GET /api/events` is 405 (the Worker is routing the API).
+
+## iOS
+
+- `ios/` is the Capacitor 8 project (Swift Package Manager, no CocoaPods). Bundle id
+  `io.github.keehwz.timebox`, iPhone only, portrait only. Commit `ios/`; `ios/App/App/public` is generated.
+- It runs the same `dist/` as the web. Branch on `isNative` from `src/lib/platform.ts` for the few
+  differences: the API is called at its full production address (`apiUrl()`), and local notifications.
+- Local notifications: `src/domain/notifications.ts` plans them from the state (pure, unit-tested);
+  `src/native/notifications.ts` replaces the pending ones whenever the plan changes. Permission is asked
+  the first time there is something to schedule.
+- The Worker allows `capacitor://localhost` through CORS. Add an origin there if another shell is added.
+- Icon and launch screen come from `npm run generate-icons`.
+- Building for a device or TestFlight needs Zhen's Apple developer account; signing is set in Xcode.
 
 ## Layout
 
@@ -78,6 +93,7 @@ All of these must pass before a PR.
 
 ## Not wired yet
 
-- "Nudge me" and "Remind me if time stays unmarked" are stored but send nothing: the web has no
-  scheduled local notifications. They become real in the iOS (Capacitor) shell.
+- On the web, "Nudge me" and "Remind me if time stays unmarked" are stored but send nothing: browsers
+  have no scheduled local notifications. They work in the iOS app.
+- The unmarked-time reminder never lands between 22:00 and 07:00 (quiet hours, not in the prototype).
 - Focus only marks the session and records its focused duration.

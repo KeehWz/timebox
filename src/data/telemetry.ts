@@ -2,6 +2,7 @@ import { db } from './db'
 import { getKv, getSettings } from './store'
 import { MAX_EVENTS_PER_BATCH, type EventName, type EventProps, type TelemetryEvent } from '../domain/telemetry'
 import { newId } from '../lib/id'
+import { apiUrl, isNative } from '../lib/platform'
 
 // Usage events wait in a local outbox and are sent when the network allows, so an offline day
 // still counts. They are also held back until the user has answered the first-launch note. Nothing here may throw into the app: recording is best-effort by design.
@@ -31,11 +32,13 @@ export function track(name: EventName, props?: EventProps, now = Date.now()) {
 
 async function post(path: string, body: unknown): Promise<number> {
   try {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
-      keepalive: true,
+      // Lets an event sent while a browser tab closes still arrive. Not used in the iOS app, where
+      // the request is cross-origin and keepalive does not combine reliably with a CORS preflight.
+      keepalive: !isNative,
     })
     return response.status
   } catch {

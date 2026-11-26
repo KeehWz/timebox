@@ -4,6 +4,8 @@ import { useAppState, useStorageFailed } from './data/useAppState'
 import * as store from './data/store'
 import { flush, record, sendFeedback } from './data/telemetry'
 import { DEFAULT_TYPES } from './domain/defaults'
+import { planNotifications } from './domain/notifications'
+import { isNative } from './lib/platform'
 import { sessionDuration } from './domain/time'
 import type { Session } from './domain/types'
 import { WHITE } from './ui/tokens'
@@ -55,6 +57,15 @@ export default function App() {
   const pageSwipeStart = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => record('app_open'), [])
+
+  // iOS: keep the pending local notifications (session nudge, unmarked time) in step with the state.
+  useEffect(() => {
+    if (!isNative || !state) return
+    const planned = planNotifications(state, Date.now())
+    import('./native/notifications')
+      .then(({ syncNotifications }) => syncNotifications(planned))
+      .catch(error => console.error('[timebox] notifications unavailable', error))
+  }, [state])
 
   // Back closes Settings; leaving a screen's history entry returns to Record.
   useEffect(() => {
@@ -166,7 +177,7 @@ export default function App() {
 
         {state && (
           <div
-            style={{ height: '100dvh', boxSizing: 'border-box' }}
+            style={{ height: '100dvh', boxSizing: 'border-box', paddingTop: 'env(safe-area-inset-top)' }}
             onPointerDown={handlePageSwipeStart}
             onPointerUp={handlePageSwipeEnd}
             onPointerCancel={() => { pageSwipeStart.current = null }}
